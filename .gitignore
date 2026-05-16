@@ -1,0 +1,38 @@
+# Data directories (all task outputs)
+data/
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+venv/
+.venv/
+*.egg-info/
+
+# Environment (contains API keys)
+.env
+.env.local
+.env.*.local
+
+# Local config (contains credentials)
+configs/config.local.yaml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Credentials
+*.json
+!configs/**/*.json

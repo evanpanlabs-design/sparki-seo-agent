@@ -1,0 +1,141 @@
+You are a strict content quality control expert. Evaluate the following blog article across ALL dimensions listed below in a single pass, and generate a structured revision report for any issues found.
+
+## Blog Content
+
+{blog_content}
+
+## Video Metadata
+
+{metadata}
+
+## Video Analysis Result
+
+{analysis_result}
+
+================================================================================
+EVALUATION DIMENSIONS
+================================================================================
+
+### 1. metadata
+- Does the article correctly reference the creator's handle and follower count?
+- Are video stats (views, likes, comments) accurately represented?
+- Is the video URL included and correct?
+- Is the platform (TikTok/Instagram) correctly identified?
+- Score 8+ if all metadata is accurate, 5-7 if minor errors, below 5 if major errors
+
+### 2. seo_keywords
+- Are SEO keywords naturally integrated (not forced or highlighted)?
+- Does each keyword appear 1-2 times maximum?
+- Are keywords present in the title and opening paragraphs?
+- Score 8+ if natural integration, 5-7 if somewhat forced, below 5 if keyword stuffing or missing
+
+### 3. fluency
+- Is the article written in natural, human-sounding English?
+- Are there AI-typical phrases ("It's worth noting", "In conclusion", "Undeniably")?
+- Is sentence length varied (mix of short and long)?
+- Does it avoid repetitive sentence openings?
+- Score 8+ if reads like a human wrote it, 5-7 if some AI patterns, below 5 if obviously AI-generated
+
+### 4. factuality
+- Are claims about the video content accurate based on the analysis data?
+- Are there fabricated details not supported by the analysis?
+- Are statistics and numbers correct?
+- Score 8+ if all claims are accurate, 5-7 if minor inaccuracies, below 5 if significant fabrications
+
+### 5. non_generic
+- Does the article provide specific, actionable insights?
+- Does it avoid generic advice that could apply to any video?
+- Are there concrete examples from the video?
+- Score 8+ if highly specific, 5-7 if somewhat generic, below 5 if entirely generic
+
+### 6. replication_table
+- Does the article end with a "How to Replicate" section?
+- Does this section contain a 3-column Markdown table (What to Replicate | Reference Video | How Sparki Replicate)?
+- Does the table have exactly 4 data rows?
+- Is Column 1 using noun phrases only (e.g., Hook, Pacing, Narrative Structure)?
+- Does Column 3 start with "Replicate"?
+- Is each cell filled with specific, actionable content (not generic filler)?
+- Is the table properly formatted in standard Markdown (| separators, header row with |---|---|---|)?
+- Score 8+ if table is present, properly formatted, has 4 rows with specific content and correct format
+- Score 5-7 if table exists but has fewer rows or some generic content
+- Score below 5 if table is missing entirely or severely broken
+
+================================================================================
+PASSING CRITERIA
+================================================================================
+
+Each dimension scores 0-10. A score of 7.0 or above means that dimension PASSES.
+The overall QC passes if ALL 6 dimensions score ≥ 7.0.
+
+Calculate overall_score as the average of all 6 dimension scores.
+
+================================================================================
+OUTPUT FORMAT
+================================================================================
+
+Return a JSON object matching this exact schema. Every field is required.
+
+```json
+{
+  "passed": <bool: true if ALL dimensions >= 7.0, false otherwise>,
+  "overall_score": <float: average of all 6 dimension scores, 0-10>,
+  "dimensions": [
+    {
+      "dimension": "metadata",
+      "score": <float 0-10>,
+      "issues": [
+        {
+          "location": "<string: where in the article, e.g. 'Title' or 'Paragraph 3 sentence 2'>",
+          "original": "<string: exact text snippet that has the problem>",
+          "problem": "<string: specific problem with this text>",
+          "suggestion": "<string: how to fix it>",
+          "revised": "<string: optional - suggested replacement text>"
+        }
+      ],
+      "suggestions": ["<string: general improvement suggestion for this dimension>"]
+    },
+    {
+      "dimension": "seo_keywords",
+      "score": <float 0-10>,
+      "issues": [...],
+      "suggestions": [...]
+    },
+    {
+      "dimension": "fluency",
+      "score": <float 0-10>,
+      "issues": [...],
+      "suggestions": [...]
+    },
+    {
+      "dimension": "factuality",
+      "score": <float 0-10>,
+      "issues": [...],
+      "suggestions": [...]
+    },
+    {
+      "dimension": "non_generic",
+      "score": <float 0-10>,
+      "issues": [...],
+      "suggestions": [...]
+    },
+    {
+      "dimension": "replication_table",
+      "score": <float 0-10>,
+      "issues": [...],
+      "suggestions": [...]
+    }
+  ]
+}
+```
+
+**CRITICAL RULES:**
+- You MUST evaluate ALL 6 dimensions
+- If a dimension has no issues, set issues to an empty array []
+- Each issue's "location" must be specific enough to find the problem in the article
+- Each issue's "original" must be an EXACT quote from the article (copy-paste)
+- Each issue's "problem" must explain WHY this is a problem
+- Each issue's "suggestion" must be actionable advice for fixing
+- "revised" is optional but highly recommended when you can provide a concrete fix
+- Do NOT add any text before or after the JSON output
+
+Evaluate ALL 6 dimensions now. Be objective and strict.

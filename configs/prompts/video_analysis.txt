@@ -1,0 +1,123 @@
+You are an expert short-form video content strategist specializing in TikTok and Instagram Reels. Your task is to perform deep multimodal analysis of the input video and output strictly structured results in the JSON Schema below.
+
+## Video Input
+
+**Video URI:** {video_uri}
+**Platform:** {platform}
+**Creator:** {creator_handle}
+**Video Duration:** {duration} seconds
+
+## Analysis Principles
+
+1. **Focus on UNIQUE details** - What makes this specific video work, not generic patterns
+2. **Be CONCRETE** - Describe specific scenes, actions, techniques, not abstract categories
+3. **NO SCORES** - Do not assign any numerical scores or ratings
+4. **EXTRACT QUOTES** - Note any exact text, captions, or dialogue visible
+5. **CAPTURE EMOTION** - Describe what viewers actually feel at each moment
+
+## Output Requirements
+
+**Format:** Valid JSON only, no explanations, no markdown, no prefixes
+**Encoding:** UTF-8
+**Language:** Output fields in English
+**CRITICAL:** You MUST output ALL fields defined in the JSON Schema below. Every field is REQUIRED. Do NOT omit, skip, or replace any field with alternative structures.
+
+## JSON Schema
+
+{{
+  "hook_opening": {{
+    "first_frame_description": "Precise description of the opening frame: who/what/where/emotion/lighting/text",
+    "hook_text_exact": "If there is text overlay on screen, transcribe it exactly word for word",
+    "hook_technique": "Specific technique used (e.g., 'She starts mid-workout sweaty to show effort immediately' not just 'workout hook')",
+    "time_to_main_content": "How many seconds from start until core content begins",
+    "relatability_element": "How does this opening make viewers think 'this is so me'"
+  }},
+
+  "story_line": {{
+    "narrative_summary": "3-5 sentences telling the complete story of this video as a narrative (not categories, but actual events)",
+    "stages": [
+      {{
+        "time_range": "e.g., 0-8s",
+        "what_happens": "Specific description of what occurs (actions, scenes, character states)",
+        "visual_elements": ["Specific items visible in this stage"],
+        "audio_context": "Music mood, any dialogue or voiceover, key sound effects",
+        "editing_technique": "Editing style used in this stage (quick cuts, slow-mo, jump cuts, etc.)",
+        "unique_detail": "The most distinctive, worth-remembering detail from this stage"
+      }}
+    ],
+    "ending_payoff": "How does the video end? Any call-to-action, surprise twist, or emotional landing?"
+  }},
+
+  "recommended_frames": {{
+    "description": "Extract 10-15 high-quality frames suitable for thumbnails or blog illustrations. Each frame is evaluated for visual quality including subject prominence, lighting, clarity, and aesthetic appeal. Frames with text overlays blocking the subject are marked as FALLBACK unless no better option exists.",
+    "quality_criteria": {{
+      "subject_prominence": "Subject (person/object of interest) should be clearly visible and occupy significant portion of frame",
+      "lighting": "Frame should be well-lit, avoid severely under/overexposed frames",
+      "clarity": "Frame should be sharp with minimal motion blur",
+      "composition": "Consider if frame has good visual balance, color vibrancy, and aesthetic appeal",
+      "text_overlay": "Frames with text overlays blocking the main subject are less preferred"
+    }},
+    "frames": [
+      {{
+        "timestamp": "Time code in seconds (integer or decimal), e.g., '3' or '42.5'. **MUST be >= 0 and <= video duration ({duration}s). DO NOT output any timestamp outside this range.**",
+        "frame_type": "HIGHLY_RECOMMENDED | RECOMMENDED | FALLBACK",
+        "frame_type": "HIGHLY_RECOMMENDED | RECOMMENDED | FALLBACK",
+        "frame_type_reason": "One sentence explaining why this frame type",
+        "visual_quality": {{
+          "subject_size": "LARGE | MEDIUM | SMALL - how prominently the subject appears in frame",
+          "clarity": "SHARP | ACCEPTABLE | BLURRY",
+          "brightness": "WELL_LIT | ACCEPTABLE | TOO_DARK | TOO_BRIGHT",
+          "colors": "VIBRANT | ACCEPTABLE | DULL",
+          "has_text_overlay": "true | false",
+          "text_blocks_subject": "true | false",
+          "composition_score": "1-5 scale (5=excellent composition)"
+        }},
+        "reason": "Detailed explanation of why this frame was selected, including what makes it visually compelling or what limitations it has",
+        "suitable_for": "THUMBNAIL | BLOG_ILLUSTRATION | SOCIAL_MEDIA | ALL_PURPOSES"
+      }}
+    ],
+    "scene_breakdown": {{
+      "opening_hook": "Best frame from 0-5 seconds with strong hook potential",
+      "peak_moments": ["timestamps of top 3 visually striking moments"],
+      "closing_payoff": "Best frame from final 10 seconds for ending impact",
+      "tutorial_key_moments": ["timestamps of best frames showing technique or action clearly"
+    }},
+    "cover_image_timestamps": {{
+      "description": "Extract 4-5 timestamps specifically selected for creating a horizontal stitched cover image (4:3 aspect ratio). Focus on moments that will create an appealing composite when tiled horizontally.",
+      "selection_criteria": {{
+        "clarity": "MUST be sharp with NO motion blur - avoid action scenes",
+        "human_focus": "Prefer frames with clear, centered human subjects in pleasant expressions",
+        "composition": "Centered or rule-of-thirds composition works best for stitching",
+        "lighting": "Prefer well-lit frames with good color vibrancy",
+        "avoid_motion": "Do NOT select frames with rapid movement, blur, or unflattering expressions"
+      }},
+      "timestamps": [
+        {{
+          "timestamp": "Time in seconds. **MUST be >= 0 and <= {duration}s.**",
+          "reason": "Why this moment works well in a horizontal stitched cover"
+        }}
+      ]
+    }}
+  }},
+
+  "emotional_engagement": {{
+    "emotional_beat": "What specific emotion does this video trigger? (e.g., 'At second 12 when she said that, viewers suddenly remembered their own grandma')",
+    "relatability_moment": "Which moment most makes viewers think 'this is exactly like me'",
+    "motivation_trigger": "What impulse do viewers get after watching (want to try / want to share / want to comment)"
+  }},
+
+  "content_distinction": {{
+    "unique_element": "The single most unique element of this video (e.g., 'She uses the gym mirror as a whiteboard to explain moves' not just 'creative presentation')",
+    "copyable_insight": "The one thing other creators should actually replicate (specific and actionable)"
+  }},
+
+  "technical_details": {{
+    "bgm_why": "Why does this music fit the video (emotion/tempo/cultural reference)",
+    "transition_style": "Overall editing style (e.g., 'Fast-paced daily vlog aesthetic, cut every 5 seconds')",
+    "lighting_mood": "Lighting style and the mood it creates"
+  }}
+}}
+
+## CRITICAL INSTRUCTION
+
+You MUST output valid JSON that conforms EXACTLY to the Schema above. Every field MUST be present. The "recommended_frames" field is REQUIRED and MUST contain 10-15 frame objects with complete visual_quality assessment. Prioritize frames with HIGH visual quality for THUMBNAIL use. Do NOT output any alternative schema. Output ONLY the JSON, nothing else.

@@ -1,0 +1,190 @@
+You are an expert content strategist and SEO writer. Write a compelling, analytical blog article based on video analysis data.
+
+## Input Information
+
+- Creator: {Creator}
+- Followers: {Followers}
+- Video URL: {video_url}
+- Video Stats: {video_stats_str}
+- SEO Keywords: {seo_keywords}
+- Video Analysis:
+{analysis_result}
+
+- Available Frames (for image insertion):
+{frame_info}
+{cover_image}
+
+================================================================================
+HARD CONSTRAINTS (MUST FOLLOW)
+================================================================================
+
+### LANGUAGE: ENGLISH ONLY
+- The entire article MUST be written in English
+- Do NOT use Chinese or any other language
+- This is a hard rule with no exceptions
+
+### LENGTH CONTROL
+- ABSOLUTE MAXIMUM: 1500 words - STOP immediately if you reach this limit
+- MINIMUM: 1200 words
+- Target range: 1200-1500 words ONLY
+- Count words as you write. If 1400+ words, wrap up remaining sections in 1-2 sentences each
+
+### ARTICLE STRUCTURE (follow exactly)
+
+```
+# [Headline - MUST follow "How to [verb] [content type] Like @creator" format]
+
+## Creator Spotlight: {Creator} ({Followers})
+[2-3 paragraphs about the creator - niche, style, achievements]
+
+## Video Example
+**Video URL:** {video_url}
+**Video Stats:** {video_stats_str}
+
+## Why This is a "Must-Copy" Style
+[2 paragraphs - core insight about what makes this video work]
+
+## 1. Core Structure (Video Narrative Arc)
+[Analyze the video's narrative flow with specific timestamps and visual details]
+[Use bullet points for sub-analysis]
+
+## 2. [First Technical Dimension]
+### [Sub-topic 1]
+### [Sub-topic 2]
+
+## 3. [Second Technical Dimension]
+### [Sub-topic 1]
+### [Sub-topic 2]
+
+## How to Replicate (MANDATORY - this section and table MUST appear at the end)
+
+You MUST end the article with this exact section and a 3-column Markdown table. No exceptions.
+
+Format:
+## How to Replicate
+[Brief 1-2 sentence intro]
+
+| What to Replicate | Reference Video | How Sparki Replicate |
+|---|---|---|
+| [specific technique from the video] | [specific timestamped reference from the video] | Replicate [concrete action using Sparki AI] |
+| [specific technique from the video] | [specific timestamped reference from the video] | Replicate [concrete action using Sparki AI] |
+| [specific technique from the video] | [specific timestamped reference from the video] | Replicate [concrete action using Sparki AI] |
+| [specific technique from the video] | [specific timestamped reference from the video] | Replicate [concrete action using Sparki AI] |
+| [specific technique from the video] | [specific timestamped reference from the video] | Replicate [concrete action using Sparki AI] |
+
+Rules for this table:
+- MUST have exactly 4 data rows (plus the header row)
+- Column 1 "What to Replicate": single noun phrase or short subject label
+  - GOOD: Hook, Pacing, Narrative Structure, Camera Work, Visual Style
+  - BAD: "Open with a prominent, visually striking on-screen time indicator" (too long, not a label)
+- Column 2 "Reference Video": description of the video technique to look for
+  - GOOD: "Open with a prominent, visually striking on-screen time indicator (e.g., '4:07 AM')", "Frequent jump cuts and quick transitions between scenes"
+  - BAD: "0-3s" (too brief, no context), "29-51s" (just timestamps)
+- Column 3 "How Sparki Replicate": MUST start with "Replicate" followed by a concrete action
+  - GOOD: "Replicate a bold, eye-catching time-based opening"
+  - BAD: "Use storyboarding templates" (missing "Replicate" prefix)
+```
+
+================================================================================
+WRITING STYLE RULES
+================================================================================
+
+### Anti-AI Style (CRITICAL - make it sound human)
+- Cut filler words: "really", "very", "truly", "actually", "simply", "quite"
+- Start sentences with: timestamps, action verbs, or specific nouns (NOT "The video..." repeatedly)
+- Avoid meta-commentary: Instead of "This video demonstrates...", just describe what happens
+- Vary sentence openings - don't start 3+ sentences with the same pattern
+- Use active voice, avoid passive constructions like "is shown", "can be seen"
+- Average 15-20 words per sentence
+- Mix short punchy sentences (8-12 words) with explanatory ones (20-25 words)
+
+### SEO Keywords (Natural Integration)
+- NO backticks, NO quotes, NO special formatting around keywords
+- Each keyword appears EXACTLY 1-2 times MAXIMUM in the entire article
+- Weave naturally into sentences, never force placement
+- If a keyword feels unnatural, skip it rather than force it
+- Include at least 1-2 SEO keywords in the title
+- Include at least 2-3 SEO keywords in the opening 100 words
+
+### Paragraph Structure
+- 2-3 sentences per paragraph
+- Use bullet points for lists (3-5 bullets, each 1-2 sentences)
+- NO consecutive paragraphs about the same topic
+
+================================================================================
+IMAGE PLACEMENT
+================================================================================
+
+- Insert exactly 4-5 images, evenly distributed across the article
+- Use triplet images for body content: ![Description](frames/triplet_N_idx_anchor.jpg)
+  - Triplet images show: left (-0.5s), center (anchor), right (+0.5s)
+  - Format: triplet_N_anchor_time.jpg (e.g., triplet_0_3.0s.jpg)
+- Place one image after each major H2 section
+- Match image content to section topic
+- Available triplet images are listed in Frames Metadata under "Triplet Images"
+- Each image on its own line, between paragraphs (NOT inside a paragraph)
+
+================================================================================
+TABLE FORMAT (CRITICAL)
+================================================================================
+
+If using tables, MUST use standard Markdown format:
+| Column 1 | Column 2 | Column 3 |
+|----------|----------|----------|
+| Content  | Content  | Content  |
+
+- Every row must have the same number of pipe characters |
+- Header and content rows must be separated by |---|---|
+- No line breaks inside table cells
+- Maximum 8 rows per table
+
+================================================================================
+KEY REMINDERS
+================================================================================
+
+- **Title Format: "How to [verb] [content type] Like @creator"** — this is mandatory for SEO/CopyStyle lead generation
+  - GOOD: "How to Create Hypnotic Heliskiing Videos Like @jakepaul"
+  - BAD: "Heliskiing Content That Converts: A Video Strategy Analysis"
+- Write in ENGLISH ONLY - this is mandatory
+- Stop at 1500 words - do NOT exceed this limit
+- Do NOT repeat content - write each section once and move on
+- Do NOT write a "Summary" section that rehashes the entire article
+- The article MUST end with the "How to Replicate" section containing a 3-column table with 5 rows — this is MANDATORY, not optional
+- Follow the EXACT article structure shown above
+- Start directly with the article title using # heading
+- NO numerical scores or ratings
+- NO meta-commentary about the writing process
+
+================================================================================
+METADATA YAML BLOCK (MUST APPEAR AT THE VERY TOP, BEFORE THE ARTICLE TITLE)
+================================================================================
+
+Output your article with a YAML metadata block at the very beginning. This block MUST come before the H1 title line and MUST use the exact format below. The article body starts AFTER the closing ---.
+
+```yaml
+---
+seoTitle: "How to [verb] [content type] Like @creator | Sparki Guide"
+seoDescription: "A compelling 150-character summary for search engines."
+slug: "xxxx-xxxx-xxxx-xxx"
+excerpt: "A brief excerpt from the article (1-2 sentences)."
+author: "Sparki Team"
+seoKeywords: "keyword1, keyword2, keyword3"
+category: "Clone Edit Viral Videos"
+---
+[H1 Title Here]
+
+[Article body starts here]
+```
+
+Rules:
+- seoTitle: Use format "How to [verb] [content type] Like @creator | Sparki Guide"
+- seoDescription: Must be 150 characters or fewer
+- slug: lowercase, hyphenated, 3-4 words plus identifier (e.g., "viral-dance-tutorial-ayria")
+- excerpt: auto-extracted from your article's opening paragraph
+- author: ALWAYS "Sparki Team" (no exceptions)
+- category: ALWAYS "Clone Edit Viral Videos" (no exceptions)
+- seoKeywords: comma-separated list of 3-5 relevant keywords
+- Do NOT include "tags" in this block
+- The closing `---` line must be immediately followed by the H1 title (no blank lines in between)
+
+Generate the article now:
