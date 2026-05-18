@@ -217,7 +217,6 @@ def task_stream(task_id: str):
         headers={
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
-            "Transfer-Encoding": "chunked",
         },
         direct_passthrough=False
     )
@@ -229,7 +228,7 @@ def task_stream(task_id: str):
 
 def _task_to_dict(task: TaskHandle) -> dict:
     """Convert TaskHandle to dict for JSON serialization."""
-    return {
+    d = {
         "task_id": task.task_id,
         "video_url": task.video_url,
         "project_name": task.project_name,
@@ -239,8 +238,16 @@ def _task_to_dict(task: TaskHandle) -> dict:
         "started_at": task.started_at,
         "completed_at": task.completed_at,
         "error": task.error,
-        "result": task.result,
+        "result": str(task.result) if task.result is not None else None,
     }
+    # Ensure all values are JSON-serializable
+    for key in list(d.keys()):
+        try:
+            import json
+            json.dumps(d[key])
+        except (TypeError, ValueError):
+            d[key] = repr(d[key])
+    return d
 
 
 def _read_task_logs(project_name: str, task_id: str) -> list[str]:

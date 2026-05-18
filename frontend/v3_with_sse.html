@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sparki SEO Agent - SSE Real-Time</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #4A83F9;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      color: #64748b;
+      margin-bottom: 40px;
+      font-size: 14px;
+    }
+
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2d3140;
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      max-width: 700px;
+      margin-bottom: 20px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #2d3140;
+      border-radius: 8px;
+      background: #0f1117;
+      color: #e2e8f0;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus { border-color: #4A83F9; }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary { background: #4A83F9; color: white; }
+    .btn-primary:hover { background: #3a6fd8; }
+    .btn-primary:disabled { background: #2d3140; color: #64748b; cursor: not-allowed; }
+
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-danger:disabled { background: #7f1d1d; color: #64748b; cursor: not-allowed; }
+
+    .status-section { display: none; }
+
+    .task-id-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .task-id-label {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .task-id-value {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #4A83F9;
+    }
+
+    .progress-bar-wrap {
+      background: #2d3140;
+      border-radius: 8px;
+      height: 8px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4A83F9, #6ba3ff);
+      border-radius: 8px;
+      transition: width 0.3s ease;
+      width: 0%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill.shining::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -75%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+      animation: shine-sweep 1.8s infinite;
+    }
+
+    @keyframes shine-sweep {
+      0%   { left: -75%; }
+      100% { left: 150%; }
+    }
+
+    .progress-bar-fill.animating {
+      animation: pulse-glow 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 4px rgba(74,131,249,0.4); }
+      50%       { box-shadow: 0 0 12px rgba(74,131,249,0.9); }
+    }
+
+    .progress-text {
+      text-align: right;
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 16px;
+    }
+
+    .stage-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 8px 0;
+      border-bottom: 1px solid #2d3140;
+    }
+
+    .stage-label { color: #64748b; }
+    .stage-value { color: #e2e8f0; font-weight: 500; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-running { background: #1e3a5f; color: #60a5fa; }
+    .status-done { background: #14532d; color: #4ade80; }
+    .status-failed { background: #4a1515; color: #f87171; }
+    .status-pending { background: #2d3140; color: #94a3b8; }
+    .status-cancelled { background: #78350f; color: #fbbf24; }
+
+    .error-msg {
+      background: #4a1515;
+      border: 1px solid #7f1d1d;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 16px;
+      font-size: 13px;
+      color: #f87171;
+      display: none;
+    }
+
+    /* Log Panel */
+    .log-card {
+      background: #1a1d27;
+      border: 1px solid #2d3140;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 700px;
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .log-title { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .log-count { font-size: 11px; color: #475569; }
+
+    .log-container {
+      background: #0f1117;
+      border: 1px solid #2d3140;
+      border-radius: 8px;
+      height: 280px;
+      overflow-y: auto;
+      padding: 12px 16px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .log-container::-webkit-scrollbar { width: 6px; }
+    .log-container::-webkit-scrollbar-track { background: #0f1117; }
+    .log-container::-webkit-scrollbar-thumb { background: #2d3140; border-radius: 3px; }
+
+    .log-entry { color: #94a3b8; }
+    .log-entry.info { color: #60a5fa; }
+    .log-entry.success { color: #4ade80; }
+    .log-entry.error { color: #f87171; }
+    .log-entry.warn { color: #fbbf24; }
+
+    .log-empty {
+      color: #475569;
+      font-style: italic;
+      text-align: center;
+      padding-top: 20px;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid #2d3140;
+      color: #94a3b8;
+    }
+    .btn-ghost:hover { background: #2d3140; color: #e2e8f0; }
+
+    .hint {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #475569;
+      text-align: center;
+    }
+
+    /* SSE connection indicator */
+    .sse-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+      background: #475569;
+    }
+    .sse-indicator.connected { background: #4ade80; animation: sse-pulse 2s infinite; }
+    .sse-indicator.connecting { background: #fbbf24; animation: sse-pulse 0.8s infinite; }
+    .sse-indicator.disconnected { background: #f87171; }
+
+    @keyframes sse-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>SPARKI SEO AGENT</h1>
+  <p class="subtitle">Video → Blog Pipeline <span class="sse-indicator" id="sseIndicator"></span><span id="sseStatus" style="font-size:11px;color:#475569;">idle</span></p>
+
+  <div class="card">
+    <div class="input-row">
+      <input type="text" id="videoUrl" placeholder="Paste TikTok/Instagram video URL..." />
+      <button class="btn btn-primary" id="submitBtn" onclick="submitTask()">Submit</button>
+      <button class="btn btn-danger" id="stopBtn" onclick="stopTask()" style="display:none;">Stop</button>
+    </div>
+
+    <div id="errorMsg" class="error-msg"></div>
+
+    <div id="statusSection" class="status-section">
+      <div class="task-id-row">
+        <span class="task-id-label">Task ID</span>
+        <span class="task-id-value" id="taskIdDisplay">—</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div class="progress-text" id="progressText">0%</div>
+      <div class="stage-row">
+        <span class="stage-label">Status</span>
+        <span class="status-badge status-pending" id="statusBadge">PENDING</span>
+      </div>
+      <div class="stage-row">
+        <span class="stage-label">Current Stage</span>
+        <span class="stage-value" id="stageDisplay">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log Panel -->
+  <div class="log-card">
+    <div class="log-header">
+      <span class="log-title">Pipeline Logs</span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span class="log-count" id="logCount">0 entries</span>
+        <button class="btn btn-ghost" id="copyLogsBtn" onclick="copyLogs()" style="padding:3px 10px;font-size:11px;">Copy</button>
+      </span>
+    </div>
+    <div class="log-container" id="logContainer">
+      <div class="log-empty" id="logEmpty">No logs yet — submit a task to see live logs</div>
+    </div>
+  </div>
+
+  <p class="hint">Test URL: https://www.tiktok.com/@annntastic/video/7625836931292630303</p>
+
+  <script>
+    let currentTaskId = null;
+    let eventSource = null;
+    let logInterval = null;  // logs still polled (not SSE)
+    let _allLogs = [];       // raw log lines for Copy button
+
+    async function submitTask() {
+      const url = document.getElementById('videoUrl').value.trim();
+      if (!url) return;
+
+      // Clean up previous SSE connection
+      closeSSE();
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+      hideError();
+
+      try {
+        const res = await fetch('http://127.0.0.1:5555/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ video_url: url, project_name: 'default' })
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Failed to submit');
+
+        currentTaskId = data.task_id;
+        document.getElementById('taskIdDisplay').textContent = currentTaskId;
+        document.getElementById('statusSection').style.display = 'block';
+        setBadge('pending', 'PENDING');
+        document.getElementById('stageDisplay').textContent = '—';
+        const progressBar = document.getElementById('progressBar');
+        if (progressBar) { progressBar.style.width = '0%'; progressBar.classList.remove('animating', 'shining'); }
+        document.getElementById('progressText').textContent = '0%';
+
+        const stopBtn = document.getElementById('stopBtn');
+        if (stopBtn) stopBtn.style.display = 'inline-block';
+
+        btn.textContent = 'Submit';
+        btn.disabled = false;
+
+        // Clear logs
+        _allLogs = [];
+        const logContainer = document.getElementById('logContainer');
+        if (logContainer) logContainer.innerHTML = '';
+        const logEmpty = document.getElementById('logEmpty');
+        if (logEmpty) logEmpty.style.display = 'block';
+        const logCount = document.getElementById('logCount');
+        if (logCount) logCount.textContent = '0 entries';
+
+        // Start SSE real-time connection
+        startSSE();
+        // Logs still polled (SSE would need backend log push support)
+        startLogPolling();
+      } catch (err) {
+        showError(err.message);
+        btn.disabled = false;
+        btn.textContent = 'Submit';
+      }
+    }
+
+    function startSSE() {
+      if (!currentTaskId) return;
+      closeSSE();
+
+      const indicator = document.getElementById('sseIndicator');
+      const statusEl = document.getElementById('sseStatus');
+      if (indicator) { indicator.className = 'sse-indicator connecting'; }
+      if (statusEl) statusEl.textContent = 'connecting...';
+
+      try {
+        eventSource = new EventSource(`http://127.0.0.1:5555/api/tasks/${currentTaskId}/stream`);
+
+        eventSource.addEventListener('status', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            updateProgressUI(data);
+          } catch (err) { /* ignore parse errors */ }
+        });
+
+        eventSource.addEventListener('error', (e) => {
+          const indicator = document.getElementById('sseIndicator');
+          const statusEl = document.getElementById('sseStatus');
+          if (indicator) { indicator.className = 'sse-indicator disconnected'; }
+          if (statusEl) statusEl.textContent = 'error';
+        });
+
+        eventSource.onopen = () => {
+          const indicator = document.getElementById('sseIndicator');
+          const statusEl = document.getElementById('sseStatus');
+          if (indicator) { indicator.className = 'sse-indicator connected'; }
+          if (statusEl) statusEl.textContent = 'connected';
+        };
+
+      } catch (e) {
+        if (indicator) indicator.className = 'sse-indicator disconnected';
+        if (statusEl) statusEl.textContent = 'failed';
+      }
+    }
+
+    function closeSSE() {
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+      if (logInterval) { clearInterval(logInterval); logInterval = null; }
+      const indicator = document.getElementById('sseIndicator');
+      const statusEl = document.getElementById('sseStatus');
+      if (indicator) indicator.className = 'sse-indicator';
+      if (statusEl) statusEl.textContent = 'idle';
+    }
+
+    // Called by SSE 'status' events
+    function updateProgressUI(data) {
+      const pct = Math.round(data.progress * 100);
+      const progressBar = document.getElementById('progressBar');
+      const progressText = document.getElementById('progressText');
+      const stageDisplay = document.getElementById('stageDisplay');
+      if (progressText) progressText.textContent = pct + '%';
+      if (stageDisplay) stageDisplay.textContent = data.current_stage || '—';
+
+      const status = data.status;
+      setBadge(status, status.toUpperCase());
+
+      if (status === 'running') {
+        if (progressBar) {
+          progressBar.style.width = pct + '%';
+          progressBar.classList.add('animating', 'shining');
+        }
+      } else {
+        // done / failed / cancelled
+        if (progressBar) {
+          progressBar.classList.remove('animating', 'shining');
+          progressBar.style.width = pct + '%';
+        }
+        closeSSE();
+        if (status === 'failed') {
+          showError(data.error || 'Pipeline failed');
+        }
+        const stopBtn = document.getElementById('stopBtn');
+        if (stopBtn) stopBtn.style.display = 'none';
+      }
+    }
+
+    async function stopTask() {
+      if (!currentTaskId) return;
+      const stopBtn = document.getElementById('stopBtn');
+      if (stopBtn) { stopBtn.disabled = true; stopBtn.textContent = 'Stopping...'; }
+
+      try {
+        const res = await fetch(`http://127.0.0.1:5555/api/tasks/${currentTaskId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          setBadge('cancelled', 'CANCELLED');
+          closeSSE();
+          const progressBar = document.getElementById('progressBar');
+          if (progressBar) progressBar.classList.remove('animating', 'shining');
+        }
+      } catch (e) { /* ignore */ }
+
+      if (stopBtn) { stopBtn.style.display = 'none'; stopBtn.disabled = false; stopBtn.textContent = 'Stop'; }
+    }
+
+    function startLogPolling() {
+      if (logInterval) clearInterval(logInterval);
+      logInterval = setInterval(pollLogs, 2000);
+    }
+
+    async function pollLogs() {
+      if (!currentTaskId) return;
+      try {
+        const res = await fetch(`http://127.0.0.1:5555/api/tasks/${currentTaskId}/logs`);
+        if (!res.ok) return;
+        const data = await res.json();
+        renderLogs(data.logs || []);
+      } catch (e) { /* ignore */ }
+    }
+
+    function renderLogs(logs) {
+      const container = document.getElementById('logContainer');
+      if (!container) return;
+      const empty = document.getElementById('logEmpty');
+
+      if (logs.length === 0) return;
+
+      // Accumulate raw logs for Copy
+      _allLogs = logs;
+
+      if (empty && empty.style) empty.style.display = 'none';
+      const countEl = document.getElementById('logCount');
+      if (countEl) countEl.textContent = logs.length + ' entries';
+
+      const fragment = document.createDocumentFragment();
+
+      logs.forEach(line => {
+        const div = document.createElement('div');
+        div.className = 'log-entry ' + getLogClass(line);
+        div.textContent = line;
+        fragment.appendChild(div);
+      });
+
+      container.innerHTML = '';
+      container.appendChild(fragment);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function copyLogs() {
+      if (!_allLogs || _allLogs.length === 0) return;
+      const text = _allLogs.join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyLogsBtn');
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = orig; }, 1500);
+        }
+      });
+    }
+
+    function getLogClass(line) {
+      const lower = line.toLowerCase();
+      if (lower.includes('error') || lower.includes('failed')) return 'error';
+      if (lower.includes('success') || lower.includes('completed') || lower.includes('done')) return 'success';
+      if (lower.includes('warning') || lower.includes('warn')) return 'warn';
+      if (lower.includes('starting') || lower.includes('running')) return 'info';
+      return '';
+    }
+
+    function setBadge(status, label) {
+      const el = document.getElementById('statusBadge');
+      if (!el) return;
+      el.className = 'status-badge status-' + status;
+      el.textContent = label;
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      if (el) { el.textContent = msg; el.style.display = 'block'; }
+    }
+
+    function hideError() {
+      const el = document.getElementById('errorMsg');
+      if (el) el.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
