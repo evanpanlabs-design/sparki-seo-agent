@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sparki SEO Agent - AI Chat + SSE</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #4A83F9;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      color: #64748b;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    /* === Layout: two-column === */
+    .main-layout {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    .left-col { flex: 0 0 360px; display: flex; flex-direction: column; gap: 16px; }
+    .right-col { flex: 1; min-width: 0; }
+
+    /* === Cards === */
+    .card, .chat-card {
+      background: #1a1d27;
+      border: 1px solid #2d3140;
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .card { padding: 28px; }
+
+    .card-title {
+      font-size: 11px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 20px;
+    }
+
+    /* === Task Card === */
+    .input-row { display: flex; gap: 10px; margin-bottom: 20px; }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #2d3140;
+      border-radius: 8px;
+      background: #0f1117;
+      color: #e2e8f0;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus { border-color: #4A83F9; }
+
+    .btn {
+      padding: 9px 18px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary { background: #4A83F9; color: white; }
+    .btn-primary:hover { background: #3a6fd8; }
+    .btn-primary:disabled { background: #2d3140; color: #64748b; cursor: not-allowed; }
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-danger:disabled { background: #7f1d1d; color: #64748b; cursor: not-allowed; }
+    .btn-ghost { background: transparent; border: 1px solid #2d3140; color: #94a3b8; }
+    .btn-ghost:hover { background: #2d3140; color: #e2e8f0; }
+
+    .error-msg {
+      background: #4a1515; border: 1px solid #7f1d1d;
+      border-radius: 8px; padding: 10px 14px; margin-top: 10px;
+      font-size: 13px; color: #f87171; display: none;
+    }
+
+    .status-section { display: none; }
+
+    .task-id-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .task-id-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .task-id-value { font-family: 'Courier New', monospace; font-size: 12px; color: #4A83F9; }
+
+    .progress-bar-wrap { background: #2d3140; border-radius: 8px; height: 6px; overflow: hidden; margin-bottom: 12px; }
+    .progress-bar-fill {
+      height: 100%; background: linear-gradient(90deg, #4A83F9, #6ba3ff);
+      border-radius: 8px; transition: width 0.3s ease; width: 0%;
+      position: relative; overflow: hidden;
+    }
+    .progress-bar-fill.shining::after {
+      content: ''; position: absolute; top: 0; left: -75%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+      animation: shine-sweep 1.8s infinite;
+    }
+    @keyframes shine-sweep { 0% { left: -75%; } 100% { left: 150%; } }
+    .progress-bar-fill.animating { animation: pulse-glow 1.5s ease-in-out infinite; }
+    @keyframes pulse-glow { 0%,100% { box-shadow: 0 0 4px rgba(74,131,249,0.4); } 50% { box-shadow: 0 0 12px rgba(74,131,249,0.9); } }
+
+    .progress-text { text-align: right; font-size: 12px; color: #64748b; margin-bottom: 14px; }
+
+    .stage-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #2d3140; }
+    .stage-label { color: #64748b; }
+    .stage-value { color: #e2e8f0; font-weight: 500; }
+
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .status-running { background: #1e3a5f; color: #60a5fa; }
+    .status-done { background: #14532d; color: #4ade80; }
+    .status-failed { background: #4a1515; color: #f87171; }
+    .status-pending { background: #2d3140; color: #94a3b8; }
+    .status-cancelled { background: #78350f; color: #fbbf24; }
+
+    /* === Log Panel === */
+    .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .log-title { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; }
+    .log-count { font-size: 11px; color: #475569; }
+    .log-container {
+      background: #0f1117; border: 1px solid #2d3140; border-radius: 8px;
+      height: 200px; overflow-y: auto; padding: 10px 14px;
+      font-family: 'Cascadia Code','Consolas', monospace; font-size: 11px; line-height: 1.6;
+    }
+    .log-container::-webkit-scrollbar { width: 5px; }
+    .log-container::-webkit-scrollbar-track { background: #0f1117; }
+    .log-container::-webkit-scrollbar-thumb { background: #2d3140; border-radius: 3px; }
+    .log-entry { color: #94a3b8; }
+    .log-entry.info { color: #60a5fa; }
+    .log-entry.success { color: #4ade80; }
+    .log-entry.error { color: #f87171; }
+    .log-entry.warn { color: #fbbf24; }
+    .log-empty { color: #475569; font-style: italic; text-align: center; padding-top: 16px; }
+
+    /* === SSE indicator === */
+    .sse-indicator { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: #475569; }
+    .sse-indicator.connected { background: #4ade80; animation: sse-pulse 2s infinite; }
+    .sse-indicator.connecting { background: #fbbf24; animation: sse-pulse 0.8s infinite; }
+    .sse-indicator.disconnected { background: #f87171; }
+    @keyframes sse-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* === AI Chat === */
+    .chat-card { display: flex; flex-direction: column; height: 540px; }
+
+    .chat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .chat-title { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; }
+
+    .chat-messages {
+      flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+      padding-right: 4px; margin-bottom: 14px;
+    }
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: #2d3140; border-radius: 2px; }
+
+    .msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
+    .msg-user { align-self: flex-end; background: #4A83F9; color: white; border-bottom-right-radius: 4px; }
+    .msg-ai { align-self: flex-start; background: #2d3140; color: #e2e8f0; border-bottom-left-radius: 4px; }
+    .msg-system { align-self: center; background: transparent; color: #475569; font-size: 12px; font-style: italic; border-radius: 8px; text-align: center; max-width: 95%; }
+
+    .chat-welcome {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: #475569; font-size: 13px; text-align: center; gap: 8px;
+    }
+    .chat-welcome .hint-text { font-size: 12px; color: #3d4455; }
+
+    .chat-input-row { display: flex; gap: 8px; }
+    .chat-input-row input {
+      flex: 1; padding: 10px 14px; border: 1px solid #2d3140; border-radius: 8px;
+      background: #0f1117; color: #e2e8f0; font-size: 13px; outline: none;
+    }
+    .chat-input-row input:focus { border-color: #4A83F9; }
+    .chat-input-row input::placeholder { color: #475569; }
+    .chat-input-row .btn { padding: 10px 16px; }
+
+    .hint { margin-top: 16px; font-size: 12px; color: #475569; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <h1>SPARKI SEO AGENT</h1>
+  <p class="subtitle">
+    <span class="sse-indicator" id="sseIndicator"></span>
+    <span id="sseStatus" style="font-size:12px;color:#475569;">idle</span>
+  </p>
+
+  <div class="main-layout">
+
+    <!-- LEFT: Task + Logs -->
+    <div class="left-col">
+      <div class="card">
+        <div class="card-title">Pipeline Task</div>
+        <div class="input-row">
+          <input type="text" id="videoUrl" placeholder="Paste TikTok/Instagram URL..." />
+          <button class="btn btn-primary" id="submitBtn" onclick="submitTask()">Submit</button>
+          <button class="btn btn-danger" id="stopBtn" onclick="stopTask()" style="display:none;">Stop</button>
+        </div>
+        <div id="errorMsg" class="error-msg"></div>
+        <div id="statusSection" class="status-section">
+          <div class="task-id-row">
+            <span class="task-id-label">Task ID</span>
+            <span class="task-id-value" id="taskIdDisplay">—</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="progressBar"></div>
+          </div>
+          <div class="progress-text" id="progressText">0%</div>
+          <div class="stage-row">
+            <span class="stage-label">Status</span>
+            <span class="status-badge status-pending" id="statusBadge">PENDING</span>
+          </div>
+          <div class="stage-row">
+            <span class="stage-label">Stage</span>
+            <span class="stage-value" id="stageDisplay">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="log-header">
+          <span class="log-title">Logs</span>
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span class="log-count" id="logCount">0</span>
+            <button class="btn btn-ghost" id="copyLogsBtn" onclick="copyLogs()" style="padding:3px 10px;font-size:11px;">Copy</button>
+          </span>
+        </div>
+        <div class="log-container" id="logContainer">
+          <div class="log-empty" id="logEmpty">No logs yet — submit a task</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: AI Chat -->
+    <div class="right-col">
+      <div class="chat-card">
+        <div class="chat-header">
+          <span class="chat-title">AI Assistant</span>
+          <button class="btn btn-ghost" id="clearChatBtn" onclick="clearChat()" style="padding:3px 10px;font-size:11px;">Clear</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-welcome" id="chatWelcome">
+            <div>SPARKI AI Assistant</div>
+            <div class="hint-text">Ask about the pipeline, video status, or any task</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" placeholder="Ask about the current task..." onkeydown="if(event.key==='Enter')sendChat()" />
+          <button class="btn btn-primary" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="hint">Test URL: https://www.tiktok.com/@annntastic/video/7625836931292630303</p>
+
+  <script>
+    /* ------------------------------------------------------------------ */
+    /*  State                                                             */
+    /* ------------------------------------------------------------------ */
+    let currentTaskId = null;
+    let eventSource = null;
+    let logInterval = null;
+    let _allLogs = [];
+
+    /* ------------------------------------------------------------------ */
+    /*  Task Submission                                                   */
+    /* ------------------------------------------------------------------ */
+    async function submitTask() {
+      const url = document.getElementById('videoUrl').value.trim();
+      if (!url) return;
+      closeSSE();
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true; btn.textContent = 'Submitting...';
+      hideError();
+
+      try {
+        const res = await fetch('http://127.0.0.1:5555/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ video_url: url, project_name: 'default' })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+
+        currentTaskId = data.task_id;
+        document.getElementById('taskIdDisplay').textContent = currentTaskId;
+        document.getElementById('statusSection').style.display = 'block';
+        setBadge('pending', 'PENDING');
+        document.getElementById('stageDisplay').textContent = '—';
+        const pb = document.getElementById('progressBar');
+        if (pb) { pb.style.width = '0%'; pb.classList.remove('animating', 'shining'); }
+        document.getElementById('progressText').textContent = '0%';
+        document.getElementById('stopBtn').style.display = 'inline-block';
+
+        btn.textContent = 'Submit'; btn.disabled = false;
+
+        _allLogs = [];
+        const logContainer = document.getElementById('logContainer');
+        if (logContainer) logContainer.innerHTML = '';
+        const logEmpty = document.getElementById('logEmpty');
+        if (logEmpty) logEmpty.style.display = 'block';
+        const logCount = document.getElementById('logCount');
+        if (logCount) logCount.textContent = '0';
+
+        startSSE();
+        startLogPolling();
+      } catch (err) {
+        showError(err.message);
+        btn.disabled = false; btn.textContent = 'Submit';
+      }
+    }
+
+    async function stopTask() {
+      if (!currentTaskId) return;
+      const btn = document.getElementById('stopBtn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Stopping...'; }
+      try {
+        const res = await fetch(`http://127.0.0.1:5555/api/tasks/${currentTaskId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          setBadge('cancelled', 'CANCELLED');
+          closeSSE();
+          const pb = document.getElementById('progressBar');
+          if (pb) pb.classList.remove('animating', 'shining');
+        }
+      } catch (e) {}
+      if (btn) { btn.style.display = 'none'; btn.disabled = false; btn.textContent = 'Stop'; }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  SSE                                                               */
+    /* ------------------------------------------------------------------ */
+    function startSSE() {
+      if (!currentTaskId) return;
+      closeSSE();
+      const ind = document.getElementById('sseIndicator');
+      const stat = document.getElementById('sseStatus');
+      if (ind) ind.className = 'sse-indicator connecting';
+      if (stat) stat.textContent = 'connecting...';
+
+      try {
+        eventSource = new EventSource(`http://127.0.0.1:5555/api/tasks/${currentTaskId}/stream`);
+        eventSource.addEventListener('status', (e) => {
+          try { updateProgressUI(JSON.parse(e.data)); } catch {}
+        });
+        eventSource.addEventListener('error', () => {
+          const ind = document.getElementById('sseIndicator');
+          const stat = document.getElementById('sseStatus');
+          if (ind) ind.className = 'sse-indicator disconnected';
+          if (stat) stat.textContent = 'disconnected';
+        });
+        eventSource.onopen = () => {
+          const ind = document.getElementById('sseIndicator');
+          const stat = document.getElementById('sseStatus');
+          if (ind) ind.className = 'sse-indicator connected';
+          if (stat) stat.textContent = 'connected';
+        };
+      } catch (e) {
+        const ind = document.getElementById('sseIndicator');
+        const stat = document.getElementById('sseStatus');
+        if (ind) ind.className = 'sse-indicator disconnected';
+        if (stat) stat.textContent = 'failed';
+      }
+    }
+
+    function closeSSE() {
+      if (eventSource) { eventSource.close(); eventSource = null; }
+      if (logInterval) { clearInterval(logInterval); logInterval = null; }
+      const ind = document.getElementById('sseIndicator');
+      const stat = document.getElementById('sseStatus');
+      if (ind) ind.className = 'sse-indicator';
+      if (stat) stat.textContent = 'idle';
+    }
+
+    function updateProgressUI(data) {
+      const pct = Math.round(data.progress * 100);
+      const pb = document.getElementById('progressBar');
+      const pt = document.getElementById('progressText');
+      const sd = document.getElementById('stageDisplay');
+      if (pt) pt.textContent = pct + '%';
+      if (sd) sd.textContent = data.current_stage || '—';
+      setBadge(data.status, data.status.toUpperCase());
+
+      if (data.status === 'running') {
+        if (pb) { pb.style.width = pct + '%'; pb.classList.add('animating', 'shining'); }
+      } else {
+        if (pb) { pb.classList.remove('animating', 'shining'); pb.style.width = pct + '%'; }
+        closeSSE();
+        if (data.status === 'failed') showError(data.error || 'Pipeline failed');
+        document.getElementById('stopBtn').style.display = 'none';
+      }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Log Polling                                                       */
+    /* ------------------------------------------------------------------ */
+    function startLogPolling() {
+      if (logInterval) clearInterval(logInterval);
+      logInterval = setInterval(pollLogs, 2000);
+    }
+
+    async function pollLogs() {
+      if (!currentTaskId) return;
+      try {
+        const res = await fetch(`http://127.0.0.1:5555/api/tasks/${currentTaskId}/logs`);
+        if (!res.ok) return;
+        const data = await res.json();
+        renderLogs(data.logs || []);
+      } catch (e) {}
+    }
+
+    function renderLogs(logs) {
+      const container = document.getElementById('logContainer');
+      if (!container) return;
+      const empty = document.getElementById('logEmpty');
+      if (logs.length === 0) return;
+      _allLogs = logs;
+      if (empty && empty.style) empty.style.display = 'none';
+      const cnt = document.getElementById('logCount');
+      if (cnt) cnt.textContent = logs.length;
+      const frag = document.createDocumentFragment();
+      logs.forEach(l => {
+        const d = document.createElement('div');
+        d.className = 'log-entry ' + getLogClass(l);
+        d.textContent = l;
+        frag.appendChild(d);
+      });
+      container.innerHTML = '';
+      container.appendChild(frag);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function getLogClass(line) {
+      const l = line.toLowerCase();
+      if (l.includes('error') || l.includes('failed')) return 'error';
+      if (l.includes('success') || l.includes('completed') || l.includes('done')) return 'success';
+      if (l.includes('warning') || l.includes('warn')) return 'warn';
+      if (l.includes('starting') || l.includes('running')) return 'info';
+      return '';
+    }
+
+    function copyLogs() {
+      if (!_allLogs.length) return;
+      navigator.clipboard.writeText(_allLogs.join('\n')).then(() => {
+        const b = document.getElementById('copyLogsBtn');
+        if (b) { const o = b.textContent; b.textContent = 'Copied!'; setTimeout(() => b.textContent = o, 1500); }
+      });
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  AI Chat — simulated responses                                     */
+    /* ------------------------------------------------------------------ */
+    async function sendChat() {
+      const input = document.getElementById('chatInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+
+      // Remove welcome if present
+      const welcome = document.getElementById('chatWelcome');
+      if (welcome) welcome.remove();
+
+      appendMsg('user', msg);
+
+      // Simulate AI thinking
+      setTimeout(() => {
+        const response = simulateAIResponse(msg);
+        appendMsg('ai', response);
+      }, 600 + Math.random() * 600);
+    }
+
+    function simulateAIResponse(msg) {
+      const m = msg.toLowerCase();
+
+      // Task-aware responses
+      const stage = document.getElementById('stageDisplay')?.textContent || '—';
+      const pct = document.getElementById('progressText')?.textContent || '—%';
+      const status = document.getElementById('statusBadge')?.textContent || '—';
+
+      if (m.includes('status') || m.includes('进度') || m.includes('进展')) {
+        if (status === 'PENDING') return '当前没有正在运行的任务。请提交一个 TikTok 或 Instagram 视频链接开始处理。';
+        if (status === 'CANCELLED') return '当前任务已取消。如需重新处理，请提交新的视频链接。';
+        return `当前任务状态：${status}，进度 ${pct}，阶段：${stage}。`;
+      }
+
+      if (m.includes('help') || m.includes('帮助') || m.includes('怎么用')) {
+        return '使用步骤：\n1. 在左侧输入框粘贴 TikTok/Instagram 视频链接\n2. 点击 Submit 开始处理\n3. 右侧 AI 助手可以回答你关于任务的问题\n\n支持平台：TikTok、Instagram';
+      }
+
+      if (m.includes('error') || m.includes('错误') || m.includes('失败')) {
+        return '如果遇到任务失败，可以尝试：\n1. 检查视频链接是否有效\n2. 确认网络连接正常\n3. 稍后重试';
+      }
+
+      if (m.includes('log') || m.includes('日志')) {
+        return '左侧面板显示了完整的任务日志。如果需要复制日志，点击 Log 标题旁的 Copy 按钮。';
+      }
+
+      if (m.includes('article') || m.includes('文章') || m.includes('博客')) {
+        if (status === 'DONE') return '文章生成已完成！可以在输出文件区域找到生成的博客文章。';
+        if (status === 'RUNNING') return `文章生成中（当前阶段：${stage}），完成后会自动提示。`;
+        return '文章会在 pipeline 的最后阶段生成。任务完成后可以在日志中查看文章路径。';
+      }
+
+      if (m.includes('video') || m.includes('视频')) {
+        if (status === 'RUNNING' && stage === 'download') return '视频正在下载中，请稍候...';
+        return '视频会首先被下载到本地，然后进行后续分析处理。';
+      }
+
+      // Default
+      const responses = [
+        `我理解你的问题。关于当前任务（${status}，${pct}）：${stage === '—' ? '还没有开始执行' : '当前在 ' + stage + ' 阶段'}。有什么可以帮你的？`,
+        '我来帮你查看。你可以通过左侧的进度条和日志了解任务详情。',
+        '好的，我收到了你的消息。任务状态：' + status + '，阶段：' + stage + '。'
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+
+    function appendMsg(role, text) {
+      const messages = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.className = 'msg msg-' + role;
+      // Handle multiline
+      div.textContent = text;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function clearChat() {
+      const messages = document.getElementById('chatMessages');
+      messages.innerHTML = '';
+      const w = document.createElement('div');
+      w.id = 'chatWelcome';
+      w.className = 'chat-welcome';
+      w.innerHTML = '<div>SPARKI AI Assistant</div><div class="hint-text">Ask about the pipeline, video status, or any task</div>';
+      messages.appendChild(w);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Utilities                                                         */
+    /* ------------------------------------------------------------------ */
+    function setBadge(status, label) {
+      const el = document.getElementById('statusBadge');
+      if (!el) return;
+      el.className = 'status-badge status-' + status;
+      el.textContent = label;
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      if (el) { el.textContent = msg; el.style.display = 'block'; }
+    }
+
+    function hideError() {
+      const el = document.getElementById('errorMsg');
+      if (el) el.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
