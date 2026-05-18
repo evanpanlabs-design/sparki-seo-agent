@@ -305,10 +305,10 @@ def _snake_to_camel(snake_str: str) -> str:
 
 
 if __name__ == "__main__":
-    # Clear proxy env vars so yt-dlp / requests don't route through proxy
     import os
     for key in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"]:
         os.environ.pop(key, None)
 
-    logger.info("Starting Sparki API Server on port 5555...")
-    app.run(host="0.0.0.0", port=5555, debug=False, threaded=True)
+    logger.info("Starting Sparki API Server on port 5555 (waitress)...")
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=5555)
