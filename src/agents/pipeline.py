@@ -132,12 +132,23 @@ def _load_stage_result(task_id: str, stage: str) -> dict | None:
 # Pipeline Nodes
 # =============================================================================
 
+def _should_continue(state: PipelineState, stage_name: str) -> bool:
+    """Skip node if pipeline already failed."""
+    if state.get("status") == PipelineStage.FAILED:
+        logger.info(f"[{state['task_id']}] Skipping {stage_name} - pipeline failed")
+        return False
+    return True
+
+
 def node_download_video(state: PipelineState) -> PipelineState:
     """Download video from URL."""
+    if not _should_continue(state, PipelineStage.DOWNLOAD):
+        return state
     task_id = state["task_id"]
     video_url = state["video_url"]
     project_name = state["project_name"]
 
+    _report_progress(state, 0.05, "download", "开始下载视频...")
     logger.info(f"[{task_id}] Starting download: {video_url}")
 
     try:
@@ -155,6 +166,7 @@ def node_download_video(state: PipelineState) -> PipelineState:
             state["video_local_path"] = result.get("local_video_path", "")
             state["video_gcs_path"] = result.get("gcs_video_path", "")
             state["logs"].append(f"[{datetime.now(timezone.utc).isoformat()}] Download completed")
+            _report_progress(state, 0.15, "download", f"视频下载完成: {result.get('local_video_path', '').split('/')[-1]}")
 
             _save_stage_result(
                 task_id=task_id,
@@ -199,9 +211,12 @@ def node_download_video(state: PipelineState) -> PipelineState:
 def node_scrape_metadata(state: PipelineState) -> PipelineState:
     """Scrape video and creator metadata."""
     task_id = state["task_id"]
+    if not _should_continue(state, PipelineStage.SCRAPE_METADATA):
+        return state
     video_url = state["video_url"]
     project_name = state["project_name"]
 
+    _report_progress(state, 0.18, "scrape_metadata", "正在爬取元数据...")
     logger.info(f"[{task_id}] Starting metadata scraping")
 
     try:
@@ -216,7 +231,9 @@ def node_scrape_metadata(state: PipelineState) -> PipelineState:
 
         if result.get("success"):
             state["video_metadata"] = result.get("metadata", {})
+            author = state["video_metadata"].get("author_name", "unknown")
             state["logs"].append(f"[{datetime.now(timezone.utc).isoformat()}] Metadata scraped")
+            _report_progress(state, 0.25, "scrape_metadata", f"@{author} 元数据爬取完成")
 
             _save_stage_result(
                 task_id=task_id,
@@ -261,12 +278,16 @@ def node_scrape_metadata(state: PipelineState) -> PipelineState:
 def node_analyze_video(state: PipelineState) -> PipelineState:
     """Analyze video with Gemini."""
     task_id = state["task_id"]
+    if not _should_continue(state, PipelineStage.ANALYZE):
+        return state
     project_name = state["project_name"]
     video_gcs_path = state.get("video_gcs_path", "")
     video_local_path = state.get("video_local_path", "")
     video_metadata = state.get("video_metadata", {})
 
     logger.info(f"[{task_id}] Starting video analysis")
+
+    _report_progress(state, 0.28, "analyze", "正在分析视频 (Gemini 多模态)...")
 
     # Determine platform and creator handle
     platform = video_metadata.get("platform", "instagram")
@@ -291,6 +312,7 @@ def node_analyze_video(state: PipelineState) -> PipelineState:
             state["analysis_result"] = result.get("analysis", {})
             state["frame_timestamps"] = result.get("frame_timestamps", [])
             state["logs"].append(f"[{datetime.now(timezone.utc).isoformat()}] Video analyzed")
+            _report_progress(state, 0.45, "analyze", f"分析完成，提取 {len(state['frame_timestamps'])} 个关键时刻")
 
             _save_stage_result(
                 task_id=task_id,
@@ -339,12 +361,16 @@ def node_analyze_video(state: PipelineState) -> PipelineState:
 def node_write_article(state: PipelineState) -> PipelineState:
     """Write blog article from analysis."""
     task_id = state["task_id"]
+    if not _should_continue(state, PipelineStage.WRITE_ARTICLE):
+        return state
     project_name = state["project_name"]
     video_metadata = state.get("video_metadata", {})
     analysis_result = state.get("analysis_result", {})
     frame_timestamps = state.get("frame_timestamps", [])
 
     logger.info(f"[{task_id}] Starting article writing")
+
+    _report_progress(state, 0.48, "write_article", "正在撰写文章...")
 
     # Build paths to metadata and analysis JSONs
     metadata_path = str(StoragePaths.local_base("data", project_name) / "metadata_result" / f"{task_id}_meta.json")
@@ -381,6 +407,7 @@ def node_write_article(state: PipelineState) -> PipelineState:
             state["article_markdown"] = result.get("article_markdown", "")
             state["article_word_count"] = result.get("word_count", 0)
             state["logs"].append(f"[{datetime.now(timezone.utc).isoformat()}] Article written ({state['article_word_count']} words)")
+            _report_progress(state, 0.65, "write_article", f"文章撰写完成 ({state['article_word_count']} 字)")
 
             _save_stage_result(
                 task_id=task_id,
@@ -428,10 +455,14 @@ def node_write_article(state: PipelineState) -> PipelineState:
 def node_qc_check(state: PipelineState) -> PipelineState:
     """Quality control check."""
     task_id = state["task_id"]
+    if not _should_continue(state, PipelineStage.QC_CHECK):
+        return state
     project_name = state["project_name"]
     article_markdown = state.get("article_markdown", "")
 
     logger.info(f"[{task_id}] Starting QC check")
+
+    _report_progress(state, 0.68, "qc_check", "正在质检检查...")
 
     # Build paths to metadata and analysis JSONs
     metadata_path = str(StoragePaths.local_base("data", project_name) / "metadata_result" / f"{task_id}_meta.json")
@@ -455,9 +486,11 @@ def node_qc_check(state: PipelineState) -> PipelineState:
             if state["qc_passed"]:
                 state["logs"].append(f"[{datetime.now(timezone.utc).isoformat()}] QC passed (score: {qc_result.get('overall_score', 0):.1f})")
                 state["status"] = PipelineStage.PUBLISH
+                _report_progress(state, 0.85, "qc_check", f"QC 通过 ({qc_result.get('overall_score', 0):.0f}/100)")
             else:
                 state["logs"].append(f"[{datetime.now(timezone.utc).isoformat()}] QC failed (score: {qc_result.get('overall_score', 0):.1f}), needs rewrite")
                 state["status"] = PipelineStage.REWRITE
+                _report_progress(state, 0.80, "qc_check", f"QC 未通过 ({qc_result.get('overall_score', 0):.0f}/100)，正在重写...")
 
             _save_stage_result(
                 task_id=task_id,
@@ -506,11 +539,15 @@ def node_qc_check(state: PipelineState) -> PipelineState:
 def node_rewrite_article(state: PipelineState) -> PipelineState:
     """Rewrite article based on QC feedback."""
     task_id = state["task_id"]
+    if not _should_continue(state, PipelineStage.REWRITE):
+        return state
     project_name = state["project_name"]
     article_markdown = state.get("article_markdown", "")
     qc_result = state.get("qc_result")
 
     logger.info(f"[{task_id}] Starting article rewrite (attempt {state['qc_attempts']})")
+
+    _report_progress(state, 0.78, "rewrite", f"正在根据QC反馈重写 (第{state['qc_attempts']}次)...")
 
     try:
         result = rewrite_article(ArticleRewriterInput(
@@ -523,6 +560,7 @@ def node_rewrite_article(state: PipelineState) -> PipelineState:
         if result.get("success"):
             state["article_markdown"] = result.get("revised_article", article_markdown)
             state["logs"].append(f"[{datetime.now(timezone.utc).isoformat()}] Article rewritten")
+            _report_progress(state, 0.82, "rewrite", "文章重写完成")
 
             _save_stage_result(
                 task_id=task_id,
@@ -548,9 +586,12 @@ def node_rewrite_article(state: PipelineState) -> PipelineState:
 def node_publish_cms(state: PipelineState) -> PipelineState:
     """Publish article to Contentful CMS."""
     task_id = state["task_id"]
+    if not _should_continue(state, PipelineStage.PUBLISH):
+        return state
     project_name = state["project_name"]
 
     logger.info(f"[{task_id}] Starting CMS publish")
+    _report_progress(state, 0.88, "publish", "正在发布到 Contentful...")
 
     try:
         from src.agents.master.contentful_publisher import get_contentful_publisher
@@ -592,6 +633,7 @@ def node_publish_cms(state: PipelineState) -> PipelineState:
 
     state["status"] = PipelineStage.DONE
     state["logs"].append(f"[{datetime.now(timezone.utc).isoformat()}] Pipeline completed")
+    _report_progress(state, 1.0, "done", "全部完成")
 
     _save_stage_result(
         task_id=task_id,
@@ -631,9 +673,27 @@ def is_failed(state: PipelineState) -> bool:
     return state.get("status") == PipelineStage.FAILED
 
 
+def should_continue(state: PipelineState, next_stage: str) -> bool:
+    """Continue to next stage only if status is not FAILED."""
+    if state.get("status") == PipelineStage.FAILED:
+        logger.info(f"[{state['task_id']}] Pipeline failed at {next_stage}, halting")
+        return False
+    return True
+
+
 # =============================================================================
 # Build LangGraph
 # =============================================================================
+
+def _report_progress(state: PipelineState, progress: float, stage: str, message: str) -> None:
+    """Report progress if callback is available."""
+    callback = state.get("progress_callback")
+    if callback:
+        try:
+            callback(progress, stage, message)
+        except Exception:
+            pass
+
 
 def _build_pipeline_graph() -> StateGraph:
     """Build the LangGraph state machine."""
@@ -651,11 +711,34 @@ def _build_pipeline_graph() -> StateGraph:
     # Set entry point
     graph.set_entry_point(PipelineStage.DOWNLOAD)
 
-    # Define edges
-    graph.add_edge(PipelineStage.DOWNLOAD, PipelineStage.SCRAPE_METADATA)
-    graph.add_edge(PipelineStage.SCRAPE_METADATA, PipelineStage.ANALYZE)
-    graph.add_edge(PipelineStage.ANALYZE, PipelineStage.WRITE_ARTICLE)
-    graph.add_edge(PipelineStage.WRITE_ARTICLE, PipelineStage.QC_CHECK)
+    # Define edges with failure checking
+    # DOWNLOAD -> SCRAPE_METADATA (if not failed)
+    graph.add_conditional_edges(
+        PipelineStage.DOWNLOAD,
+        lambda s: "scrape_metadata" if s.get("status") != PipelineStage.FAILED else "end",
+        {"scrape_metadata": PipelineStage.SCRAPE_METADATA, "end": END}
+    )
+
+    # SCRAPE_METADATA -> ANALYZE (if not failed)
+    graph.add_conditional_edges(
+        PipelineStage.SCRAPE_METADATA,
+        lambda s: "analyze" if s.get("status") != PipelineStage.FAILED else "end",
+        {"analyze": PipelineStage.ANALYZE, "end": END}
+    )
+
+    # ANALYZE -> WRITE_ARTICLE (if not failed)
+    graph.add_conditional_edges(
+        PipelineStage.ANALYZE,
+        lambda s: "write_article" if s.get("status") != PipelineStage.FAILED else "end",
+        {"write_article": PipelineStage.WRITE_ARTICLE, "end": END}
+    )
+
+    # WRITE_ARTICLE -> QC_CHECK (if not failed)
+    graph.add_conditional_edges(
+        PipelineStage.WRITE_ARTICLE,
+        lambda s: "qc_check" if s.get("status") != PipelineStage.FAILED else "end",
+        {"qc_check": PipelineStage.QC_CHECK, "end": END}
+    )
 
     # Conditional edge from QC_CHECK
     graph.add_conditional_edges(
@@ -667,11 +750,20 @@ def _build_pipeline_graph() -> StateGraph:
         }
     )
 
-    # From REWRITE, go back to QC_CHECK for another round
-    graph.add_edge(PipelineStage.REWRITE, PipelineStage.QC_CHECK)
+    # REWRITE -> QC_CHECK (if not failed), otherwise END
+    graph.add_conditional_edges(
+        PipelineStage.REWRITE,
+        lambda s: "qc_check" if s.get("status") != PipelineStage.FAILED else "end",
+        {"qc_check": PipelineStage.QC_CHECK, "end": END}
+    )
 
-    # PUBLISH leads to DONE
-    graph.add_edge(PipelineStage.PUBLISH, END)
+    # PUBLISH -> END (if not failed), otherwise END
+    graph.add_conditional_edges(
+        PipelineStage.PUBLISH,
+        lambda s: "end" if s.get("status") == PipelineStage.FAILED else "end",
+        {"end": END}
+    )
+    # Note: if status was FAILED before reaching here, we still go to END and preserve FAILED
 
     return graph.compile()
 
@@ -688,7 +780,8 @@ def run_pipeline(
     video_url: str,
     project_name: str = "default",
     task_id: str = None,
-    seo_keywords: list[str] = None
+    seo_keywords: list[str] = None,
+    progress_callback: "Callable[[float, str, str], None]" = None
 ) -> dict:
     """Run the complete video-to-blog pipeline.
 
@@ -729,7 +822,8 @@ def run_pipeline(
         "revision_needed": False,
         "cms_draft_url": "",
         "logs": [f"[{datetime.now(timezone.utc).isoformat()}] Pipeline started"],
-        "errors": []
+        "errors": [],
+        "progress_callback": progress_callback
     }
 
     # Run the graph in a separate thread to avoid Playwright sync API conflicts in asyncio loop

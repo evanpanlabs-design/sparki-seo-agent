@@ -67,11 +67,16 @@ class PipelinePool:
         def run_pipeline():
             try:
                 from src.agents.pipeline import run_pipeline
+
+                def progress_callback(progress: float, stage: str, message: str):
+                    self._update_status(task_id, "running", progress, stage)
+
                 self._update_status(task_id, "running", 0.0, "download")
                 result = run_pipeline(
                     video_url=video_url,
                     project_name=project_name,
-                    task_id=task_id
+                    task_id=task_id,
+                    progress_callback=progress_callback
                 )
                 self._update_status(
                     task_id,

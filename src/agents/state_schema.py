@@ -4,7 +4,7 @@ All type definitions are based on InterfaceContracts.md.
 Import these types in all nodes to ensure consistency.
 """
 
-from typing import TypedDict, NotRequired
+from typing import TypedDict, NotRequired, Callable
 
 
 class VideoMetadata(TypedDict):
@@ -110,3 +110,7 @@ class PipelineState(TypedDict):
     # Logs
     logs: list[str]
     errors: list[str]
+
+    # Progress callback: Callable[[float, str, str], None]
+    # Signature: callback(progress: float, stage: str, message: str)
+    progress_callback: NotRequired["Callable[[float, str, str], None]"] | None

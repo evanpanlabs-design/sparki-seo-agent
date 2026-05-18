@@ -28,7 +28,8 @@ configs/config.local.yaml
 .DS_Store
 Thumbs.db
 
-# Testing
+# Interview Prep
+interview_prep/
 .pytest_cache/
 .coverage
 htmlcov/
