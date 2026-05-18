@@ -247,7 +247,7 @@ def _read_task_logs(project_name: str, task_id: str) -> list[str]:
     """Read logs from log file."""
     try:
         from src.storage.storage_paths import StoragePaths
-        log_path = StoragePaths.local_logs_path(project_name, task_id)
+        log_path = StoragePaths.local_log_path("data", project_name, task_id)
         if log_path and log_path.exists():
             with open(log_path, "r", encoding="utf-8") as f:
                 return [line.strip() for line in f if line.strip()]

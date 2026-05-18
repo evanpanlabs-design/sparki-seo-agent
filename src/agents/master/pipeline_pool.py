@@ -67,25 +67,41 @@ class PipelinePool:
         def run_pipeline():
             try:
                 from src.agents.pipeline import run_pipeline
+                from src.storage.storage_paths import StoragePaths
+                import logging
 
-                def progress_callback(progress: float, stage: str, message: str):
-                    self._update_status(task_id, "running", progress, stage)
+                # Set up file handler so logs are written to disk
+                log_path = StoragePaths.local_log_path("data", project_name, task_id)
+                log_path.parent.mkdir(parents=True, exist_ok=True)
+                fh = logging.FileHandler(log_path, encoding="utf-8")
+                fh.setLevel(logging.INFO)
+                formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+                fh.setFormatter(formatter)
+                root_logger = logging.getLogger()
+                root_logger.addHandler(fh)
 
-                self._update_status(task_id, "running", 0.0, "download")
-                result = run_pipeline(
-                    video_url=video_url,
-                    project_name=project_name,
-                    task_id=task_id,
-                    progress_callback=progress_callback
-                )
-                self._update_status(
-                    task_id,
-                    "done" if result.get("status") == "done" else "failed",
-                    1.0,
-                    "done",
-                    result=result,
-                    error=result.get("errors", [None])[0] if result.get("errors") else None
-                )
+                try:
+                    def progress_callback(progress: float, stage: str, message: str):
+                        self._update_status(task_id, "running", progress, stage)
+
+                    self._update_status(task_id, "running", 0.0, "download")
+                    result = run_pipeline(
+                        video_url=video_url,
+                        project_name=project_name,
+                        task_id=task_id,
+                        progress_callback=progress_callback
+                    )
+                    self._update_status(
+                        task_id,
+                        "done" if result.get("status") == "done" else "failed",
+                        1.0,
+                        "done",
+                        result=result,
+                        error=result.get("errors", [None])[0] if result.get("errors") else None
+                    )
+                finally:
+                    root_logger.removeHandler(fh)
+                    fh.close()
             except Exception as e:
                 logger.error(f"Pipeline task {task_id} failed: {e}")
                 self._update_status(task_id, "failed", 0.0, "error", error=str(e))
