@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sparki SEO Blog Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f0f0eb;
+            --card: #ffffff;
+            --border: #e9eaed;
+            --primary: #4A83F9;
+            --primary-hover: #3A73E9;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --error: #EF4444;
+            --text-primary: #111111;
+            --text-secondary: #646363;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-shrink: 0;
+            height: 52px;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 10px; }
+
+        .logo {
+            width: 28px; height: 28px;
+            background: var(--primary);
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 700; font-size: 12px;
+        }
+
+        .header-title { font-size: 14px; font-weight: 600; }
+
+        .header-center {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: var(--bg);
+            border-radius: 6px;
+            padding: 3px;
+        }
+
+        .mode-btn {
+            padding: 6px 14px;
+            border: none;
+            background: transparent;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: var(--card);
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .mode-btn:hover:not(.active) { color: var(--text-primary); }
+
+        .header-right { display: flex; gap: 6px; }
+
+        .icon-btn {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--card);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 200px;
+            background: var(--card);
+            border-right: 1px solid var(--border);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-title {
+            font-size: 10px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            color: var(--text-secondary); margin-bottom: 4px;
+        }
+
+        .project-item {
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .project-item:hover { background: var(--bg); }
+        .project-item.active {
+            border-color: var(--primary);
+            background: rgba(74, 131, 249, 0.08);
+        }
+
+        .project-name { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+        .project-stats { display: flex; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+        .stat-running { color: var(--primary); }
+        .stat-done { color: var(--success); }
+        .stat-failed { color: var(--error); }
+
+        .new-project-btn {
+            margin-top: auto;
+            padding: 10px;
+            border: 1px dashed var(--primary);
+            background: transparent;
+            color: var(--primary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px; font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .new-project-btn:hover { background: rgba(74,131,249,0.08); }
+
+        /* Workspace - 3 Columns */
+        .workspace {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            min-width: 600px;
+        }
+
+        .column {
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Splitter */
+        .splitter {
+            width: 4px; background: var(--border);
+            cursor: col-resize; flex-shrink: 0;
+            transition: background 0.15s;
+            opacity: 0.5;
+        }
+
+        .splitter:hover, .splitter.dragging { opacity: 1; background: var(--primary); }
+
+        .splitter-h {
+            height: 4px; background: var(--border);
+            cursor: row-resize; flex-shrink: 0;
+            transition: background 0.15s;
+            opacity: 0.5;
+        }
+
+        .splitter-h:hover, .splitter-h.dragging { opacity: 1; background: var(--primary); }
+
+        /* Left Column */
+        .col-left {
+            width: 280px; flex-shrink: 0;
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+        }
+
+        /* Middle Column */
+        .col-middle { width: 350px; flex-shrink: 0; }
+
+        /* Right Column */
+        .col-right {
+            flex: 1; min-width: 150px;
+            border-left: 1px solid var(--border);
+        }
+
+        .card-ai { flex-shrink: 0; }
+        .card-progress { flex-shrink: 0; }
+        .card-log { flex: 1; min-height: 80px; }
+
+        /* Card */
+        .card {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            display: flex; flex-direction: column;
+        }
+
+        .card:last-child { border-bottom: none; }
+
+        .card-header {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .card-title { font-size: 12px; font-weight: 600; }
+
+        .card-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* Card Proportions */
+        .card-ai { height: 35%; flex-shrink: 0; }
+        .card-progress { height: 20%; flex-shrink: 0; }
+        .card-log { flex: 1; }
+
+        /* AI Chat */
+        .chat-messages {
+            flex: 1; overflow-y: auto;
+            padding: 8px; font-size: 12px; line-height: 1.5;
+        }
+
+        .chat-entry { margin-bottom: 8px; }
+        .chat-user { color: var(--primary); font-weight: 500; word-break: break-all; }
+        .chat-assistant { color: var(--text-primary); }
+        .chat-time { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+
+        .chat-input-row {
+            display: flex; gap: 6px;
+            padding: 8px; border-top: 1px solid var(--border);
+        }
+
+        .chat-input {
+            flex: 1; padding: 8px 10px;
+            border: 1px solid var(--border); border-radius: 4px;
+            font-size: 12px; font-family: inherit; outline: none;
+        }
+
+        .chat-input:focus { border-color: var(--primary); }
+
+        .send-btn {
+            padding: 8px 14px; background: var(--primary); color: white;
+            border: none; border-radius: 4px;
+            font-size: 12px; font-weight: 500; cursor: pointer;
+        }
+
+        .send-btn:hover { background: var(--primary-hover); }
+
+        /* Progress */
+        .progress-content { padding: 12px; }
+
+        .progress-bar-wrap {
+            height: 8px; background: var(--border);
+            border-radius: 4px; overflow: hidden; margin-bottom: 10px;
+        }
+
+        .progress-bar-fill {
+            height: 100%; background: var(--primary);
+            border-radius: 4px; transition: width 0.3s;
+        }
+
+        .progress-info {
+            display: flex; justify-content: space-between;
+            font-size: 11px; color: var(--text-secondary);
+        }
+
+        .progress-stage {
+            font-weight: 600; color: var(--primary);
+        }
+
+        .stages-mini {
+            display: flex; gap: 4px; margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stage-chip {
+            padding: 3px 8px;
+            background: var(--bg);
+            border-radius: 3px;
+            font-size: 10px; font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .stage-chip.done { background: rgba(16,185,129,0.1); color: var(--success); }
+        .stage-chip.active { background: rgba(74,131,249,0.1); color: var(--primary); }
+
+        /* Log Panel */
+        .log-list {
+            flex: 1; overflow-y: auto;
+            padding: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+        }
+
+        .log-entry {
+            padding: 4px 0; border-bottom: 1px solid var(--border);
+            display: flex; gap: 8px;
+        }
+
+        .log-entry:last-child { border-bottom: none; }
+        .log-time { color: var(--text-secondary); flex-shrink: 0; }
+        .log-msg { color: var(--text-primary); flex: 1; }
+        .log-msg.error { color: var(--error); font-weight: 500; }
+        .log-msg.success { color: var(--success); }
+        .log-msg.running { color: var(--primary); }
+
+        /* Blog Preview - Middle Column */
+        .blog-tabs {
+            display: flex; background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto; flex-shrink: 0;
+        }
+
+        .blog-tabs::-webkit-scrollbar { height: 0; }
+
+        .tab {
+            padding: 6px 12px; font-size: 11px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            display: flex; align-items: center; gap: 6px;
+        }
+
+        .tab:hover { color: var(--text-primary); }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); background: var(--card); }
+
+        .tab-close {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px;
+        }
+
+        .tab-close:hover { background: var(--error); color: white; }
+
+        .blog-body { flex: 1; overflow-y: auto; padding: 12px; }
+
+        .blog-header { margin-bottom: 10px; }
+
+        .blog-title {
+            font-size: 14px; font-weight: 600; margin-bottom: 6px;
+        }
+
+        .blog-meta { display: flex; gap: 16px; font-size: 11px; color: var(--text-secondary); }
+
+        .qc-badge {
+            display: inline-flex; align-items: center; gap: 3px;
+            padding: 2px 6px;
+            background: rgba(16, 185, 129, 0.1); color: var(--success);
+            border-radius: 3px; font-weight: 500;
+        }
+
+        .blog-excerpt {
+            font-size: 12px; line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg); padding: 10px; border-radius: 6px;
+        }
+
+        .blog-actions {
+            display: flex; gap: 8px; padding: 10px 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn {
+            padding: 7px 12px; border-radius: 4px;
+            font-size: 11px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s;
+            border: 1px solid var(--border); background: var(--card);
+            color: var(--text-primary);
+        }
+
+        .btn:hover { border-color: var(--primary); color: var(--primary); }
+        .btn.primary { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn.primary:hover { background: var(--primary-hover); }
+
+        .folder-btn {
+            display: flex; align-items: center; gap: 4px;
+            padding: 4px 8px; border: none;
+            background: var(--bg); border-radius: 4px;
+            font-size: 10px; color: var(--text-secondary); cursor: pointer;
+        }
+
+        .folder-btn:hover { background: var(--primary); color: white; }
+
+        /* Video Preview - Right Column */
+        .video-tabs {
+            display: flex; background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .video-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        .video-info {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px; border-bottom: 1px solid var(--border);
+        }
+
+        .video-thumb {
+            width: 80px; height: 50px;
+            background: #1a1a1a; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 20px; cursor: pointer;
+        }
+
+        .video-meta { flex: 1; }
+        .video-author { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+        .video-stats { font-size: 11px; color: var(--text-secondary); }
+
+        .video-player {
+            flex: 1; padding: 10px; min-height: 150px;
+        }
+
+        video {
+            width: 100%; max-height: 200px;
+            border-radius: 6px; background: #000;
+        }
+
+        .video-placeholder {
+            width: 100%; height: 100%;
+            min-height: 120px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border-radius: 6px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #666; font-size: 12px; gap: 8px;
+        }
+
+        .video-placeholder-icon { font-size: 32px; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 1000;
+            align-items: center; justify-content: center;
+        }
+
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+            background: var(--card); border-radius: 12px;
+            width: 90%; max-width: 800px; max-height: 80vh;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 12px 16px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .modal-title { font-size: 14px; font-weight: 600; }
+
+        .modal-close {
+            width: 28px; height: 28px;
+            border: none; background: var(--bg);
+            border-radius: 50%; cursor: pointer; font-size: 14px;
+        }
+
+        .modal-body { flex: 1; overflow-y: auto; padding: 16px; }
+
+        /* Markdown */
+        .markdown { font-size: 13px; line-height: 1.7; }
+        .markdown h1 { font-size: 20px; margin-bottom: 12px; }
+        .markdown h2 { font-size: 16px; margin: 16px 0 8px; }
+        .markdown h3 { font-size: 14px; margin: 12px 0 6px; }
+        .markdown p { margin-bottom: 10px; }
+        .markdown ul, .markdown ol { margin: 8px 0 8px 20px; }
+        .markdown li { margin-bottom: 4px; }
+        .markdown code { background: var(--bg); padding: 2px 5px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+        .markdown pre { background: #1a1a1a; color: #e0e0e0; padding: 12px; border-radius: 6px; overflow-x: auto; }
+        .markdown pre code { background: transparent; padding: 0; color: inherit; }
+
+        /* QC Detail */
+        .qc-score-big { text-align: center; padding: 20px; }
+        .qc-score-number { font-size: 48px; font-weight: 700; color: var(--primary); }
+        .qc-score-label { font-size: 12px; color: var(--text-secondary); }
+
+        .qc-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .qc-item:last-child { border-bottom: none; }
+
+        .qc-icon {
+            width: 20px; height: 20px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; flex-shrink: 0;
+        }
+
+        .qc-icon.pass { background: rgba(16,185,129,0.1); color: var(--success); }
+        .qc-icon.warn { background: rgba(245,158,11,0.1); color: var(--warning); }
+        .qc-icon.fail { background: rgba(239,68,68,0.1); color: var(--error); }
+
+        .qc-text { flex: 1; }
+        .qc-title { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
+        .qc-desc { font-size: 11px; color: var(--text-secondary); }
+
+        /* Settings Modal */
+        .settings-section { margin-bottom: 24px; }
+        .settings-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+        .settings-row {
+            display: flex; align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .settings-label {
+            width: 140px; font-size: 12px;
+            color: var(--text-secondary); flex-shrink: 0;
+        }
+
+        .settings-input {
+            flex: 1; padding: 8px 10px;
+            border: 1px solid var(--border); border-radius: 4px;
+            font-size: 12px; font-family: inherit;
+        }
+
+        .settings-input:focus { border-color: var(--primary); outline: none; }
+
+        .settings-hint {
+            font-size: 10px; color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .save-btn {
+            padding: 10px 20px;
+            background: var(--primary); color: white;
+            border: none; border-radius: 4px;
+            font-size: 12px; font-weight: 500; cursor: pointer;
+            margin-top: 16px;
+        }
+
+        .save-btn:hover { background: var(--primary-hover); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">S</div>
+            <span class="header-title">Sparki SEO Blog Agent</span>
+        </div>
+
+        <div class="header-center">
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="modeAuto" onclick="setMode('auto')">AUTO 发布</button>
+                <button class="mode-btn" id="modeManual" onclick="setMode('manual')">MANUAL 手动</button>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <button class="icon-btn" onclick="showSettings()" title="设置">&#9881;</button>
+            <button class="icon-btn" title="帮助">?</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-title">项目</div>
+
+            <div class="project-item active">
+                <div class="project-name">default</div>
+                <div class="project-stats">
+                    <span>15任务</span>
+                    <span class="stat-running">● 2</span>
+                    <span class="stat-done">✓ 12</span>
+                    <span class="stat-failed">✗ 1</span>
+                </div>
+            </div>
+
+            <div class="project-item">
+                <div class="project-name">test_parallel</div>
+                <div class="project-stats">
+                    <span>3任务</span>
+                    <span class="stat-running">● 1</span>
+                    <span class="stat-done">✓ 2</span>
+                </div>
+            </div>
+        </aside>
+
+        <div class="workspace" id="workspace">
+            <!-- Left Column: AI Chat + Progress + Log -->
+            <div class="column col-left" id="colLeft">
+                <!-- AI Chat -->
+                <div class="card card-ai" id="cardAi">
+                    <div class="card-header"><span class="card-title">AI 助手</span></div>
+                    <div class="card-body">
+                        <div class="chat-messages">
+                            <div class="chat-entry">
+                                <div class="chat-assistant">> 输入视频URL开始处理，或输入 /help 查看命令</div>
+                            </div>
+                            <div class="chat-entry">
+                                <div class="chat-user">https://www.tiktok.com/@sofialiaa/video/7598246662624070967</div>
+                                <div class="chat-time">10:30:15</div>
+                            </div>
+                            <div class="chat-entry">
+                                <div class="chat-assistant">> 已添加到处理队列，任务ID: 69fb086b</div>
+                                <div class="chat-time">10:30:15</div>
+                            </div>
+                        </div>
+                        <div class="chat-input-row">
+                            <input type="text" class="chat-input" id="chatInput" placeholder="输入视频URL或命令...">
+                            <button class="send-btn" id="sendBtn">发送</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="splitter-h" id="splitterH1"></div>
+
+                <!-- Progress Bar -->
+                <div class="card card-progress" id="cardProgress">
+                    <div class="card-header">
+                        <span class="card-title">处理进度</span>
+                        <span class="progress-stage">80%</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress-content">
+                            <div class="progress-bar-wrap">
+                                <div class="progress-bar-fill" style="width: 80%"></div>
+                            </div>
+                            <div class="progress-info">
+                                <span>Task 69fb086b</span>
+                                <span>PUBLISH</span>
+                            </div>
+                            <div class="stages-mini">
+                                <span class="stage-chip done">DOWNLOAD</span>
+                                <span class="stage-chip done">META</span>
+                                <span class="stage-chip done">ANALYZE</span>
+                                <span class="stage-chip done">FRAMES</span>
+                                <span class="stage-chip done">ARTICLE</span>
+                                <span class="stage-chip done">QC</span>
+                                <span class="stage-chip active">PUBLISH</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="splitter-h" id="splitterH2"></div>
+
+                <!-- Log Panel -->
+                <div class="card card-log" id="cardLog">
+                    <div class="card-header"><span class="card-title">日志</span></div>
+                    <div class="card-body">
+                        <div class="log-list">
+                            <div class="log-entry">
+                                <span class="log-time">10:30:15</span>
+                                <span class="log-msg success">✓ Video downloaded (1.47MB)</span>
+                            </div>
+                            <div class="log-entry">
+                                <span class="log-time">10:30:18</span>
+                                <span class="log-msg success">✓ Metadata scraped (@sofialiaa)</span>
+                            </div>
+                            <div class="log-entry">
+                                <span class="log-time">10:30:22</span>
+                                <span class="log-msg success">✓ Video analyzed (Gemini)</span>
+                            </div>
+                            <div class="log-entry">
+                                <span class="log-time">10:30:35</span>
+                                <span class="log-msg success">✓ Frames extracted (10 frames)</span>
+                            </div>
+                            <div class="log-entry">
+                                <span class="log-time">10:30:40</span>
+                                <span class="log-msg success">✓ Article written (1,261 words)</span>
+                            </div>
+                            <div class="log-entry">
+                                <span class="log-time">10:30:45</span>
+                                <span class="log-msg success">✓ QC passed (87/100)</span>
+                            </div>
+                            <div class="log-entry">
+                                <span class="log-time">10:30:50</span>
+                                <span class="log-msg running">⚙ Publishing to Contentful...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="splitter" id="splitterV1"></div>
+
+            <!-- Middle Column: Blog Preview -->
+            <div class="column col-middle" id="colMiddle">
+                <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+                    <div class="blog-tabs">
+                        <div class="tab active">
+                            <span>@sofialiaa</span>
+                            <span class="tab-close">×</span>
+                        </div>
+                        <div class="tab">
+                            <span>@mialaurengreen</span>
+                            <span class="tab-close">×</span>
+                        </div>
+                    </div>
+                    <div class="card-header">
+                        <span class="card-title">Blog 预览 & 质检</span>
+                        <button class="folder-btn" onclick="openFolder('articles')">&#128193; 目录</button>
+                    </div>
+                    <div class="card-body blog-body">
+                        <div class="blog-header">
+                            <div class="blog-title">How to Curate an Aesthetic Feed Like a Pro</div>
+                            <div class="blog-meta">
+                                <span>1,261 words</span>
+                                <span class="qc-badge">✓ 87/100</span>
+                            </div>
+                        </div>
+                        <div class="blog-excerpt">
+                            <strong>Introduction</strong><br>
+                            In today's digital landscape, aesthetic coherence has become paramount for content creators seeking to establish a recognizable brand identity...
+                        </div>
+                    </div>
+                    <div class="blog-actions">
+                        <button class="btn" onclick="showModal('blogModal')">查看全文</button>
+                        <button class="btn" onclick="showModal('qcModal')">质检详情</button>
+                        <button class="btn primary">发布</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="splitter" id="splitterV2"></div>
+
+            <!-- Right Column: Video Preview -->
+            <div class="column col-right" id="colRight">
+                <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+                    <div class="video-tabs">
+                        <div class="tab active">
+                            <span>@sofialiaa</span>
+                            <span class="tab-close">×</span>
+                        </div>
+                        <div class="tab">
+                            <span>@mialaurengreen</span>
+                            <span class="tab-close">×</span>
+                        </div>
+                    </div>
+                    <div class="card-header">
+                        <span class="card-title">视频预览</span>
+                        <button class="folder-btn" onclick="openFolder('videos')">&#128193; 目录</button>
+                    </div>
+                    <div class="card-body video-body">
+                        <div class="video-info">
+                            <div class="video-thumb">▶</div>
+                            <div class="video-meta">
+                                <div class="video-author">@sofialiaa</div>
+                                <div class="video-stats">23s | 720p | 369.6K followers</div>
+                            </div>
+                        </div>
+                        <div class="video-player">
+                            <div class="video-placeholder">
+                                <span class="video-placeholder-icon">▶</span>
+                                <span>视频播放器</span>
+                            </div>
+                            <!-- Real video player (when video available):
+                            <video controls><source src="video.mp4" type="video/mp4"></video>
+                            -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blog Modal -->
+    <div class="modal-overlay" id="blogModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">Blog 全文 - How to Curate an Aesthetic Feed Like a Pro</span>
+                <button class="modal-close" onclick="hideModal('blogModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="markdown">
+                    <h1>How to Curate an Aesthetic Feed Like a Pro</h1>
+                    <h2>Introduction</h2>
+                    <p>In today's digital landscape, aesthetic coherence has become paramount for content creators seeking to establish a recognizable brand identity.</p>
+                    <h2>Color Theory</h2>
+                    <p>One of the fundamental aspects is understanding color theory...</p>
+                    <pre><code>palette = {"primary": "#8B7355", "accent": "#D4C5B9"}</code></pre>
+                    <p>Building an aesthetic feed takes time and intentionality.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QC Modal -->
+    <div class="modal-overlay" id="qcModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">质检详情</span>
+                <button class="modal-close" onclick="hideModal('qcModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="qc-score-big">
+                    <div class="qc-score-number">87</div>
+                    <div class="qc-score-label">QC Score</div>
+                </div>
+                <div class="qc-item">
+                    <div class="qc-icon pass">✓</div>
+                    <div class="qc-text">
+                        <div class="qc-title">标题优化</div>
+                        <div class="qc-desc">包含目标关键词，长度适中</div>
+                    </div>
+                </div>
+                <div class="qc-item">
+                    <div class="qc-icon pass">✓</div>
+                    <div class="qc-text">
+                        <div class="qc-title">内容长度</div>
+                        <div class="qc-desc">1,261字，符合最佳范围</div>
+                    </div>
+                </div>
+                <div class="qc-item">
+                    <div class="qc-icon pass">✓</div>
+                    <div class="qc-text">
+                        <div class="qc-title">关键词密度</div>
+                        <div class="qc-desc">主要关键词出现3次，分布均匀</div>
+                    </div>
+                </div>
+                <div class="qc-item">
+                    <div class="qc-icon warn">⚠</div>
+                    <div class="qc-text">
+                        <div class="qc-title">可读性</div>
+                        <div class="qc-desc">建议增加短段落</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <span class="modal-title">设置</span>
+                <button class="modal-close" onclick="hideModal('settingsModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <div class="settings-title">Google Cloud</div>
+                    <div class="settings-row">
+                        <label class="settings-label">GCP Project ID</label>
+                        <input type="text" class="settings-input" id="gcpProjectId" placeholder="my-gcp-project">
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-label">GCS Bucket</label>
+                        <input type="text" class="settings-input" id="gcsBucket" placeholder="my-bucket-name">
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-title">AI 模型</div>
+                    <div class="settings-row">
+                        <label class="settings-label">Gemini 模型</label>
+                        <input type="text" class="settings-input" id="geminiModel" placeholder="gemini-1.5-pro">
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-title">API 配置</div>
+                    <div class="settings-row">
+                        <label class="settings-label">API Key</label>
+                        <input type="password" class="settings-input" id="apiKey" placeholder="••••••••••••">
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-label">API URL</label>
+                        <input type="text" class="settings-input" id="apiUrl" placeholder="https://api.example.com/v1">
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-label">模型名称</label>
+                        <input type="text" class="settings-input" id="modelName" placeholder="gpt-4o">
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-title">Contentful CMS</div>
+                    <div class="settings-row">
+                        <label class="settings-label">Space ID</label>
+                        <input type="text" class="settings-input" id="spaceId" placeholder="abc123">
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-label">Environment</label>
+                        <input type="text" class="settings-input" id="env" placeholder="master">
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-label">Access Token</label>
+                        <input type="password" class="settings-input" id="accessToken" placeholder="••••••••••••">
+                    </div>
+                </div>
+
+                <button class="save-btn" onclick="saveSettings()">保存设置</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== API Client ==========
+        const API_BASE = "http://localhost:5555/api";
+        let currentTaskId = null;
+        let eventSource = null;
+
+        const api = {
+            async health() {
+                try {
+                    const r = await fetch(`${API_BASE}/health`);
+                    return r.json();
+                } catch (e) { return { status: "error", message: e.message }; }
+            },
+
+            async listTasks() {
+                try {
+                    const r = await fetch(`${API_BASE}/tasks`);
+                    return r.json();
+                } catch (e) { return { tasks: [] }; }
+            },
+
+            async getTask(taskId) {
+                try {
+                    const r = await fetch(`${API_BASE}/tasks/${taskId}`);
+                    return r.json();
+                } catch (e) { return null; }
+            },
+
+            async createTask(videoUrl, projectName = "default") {
+                const r = await fetch(`${API_BASE}/tasks`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ video_url: videoUrl, project_name: projectName })
+                });
+                return r.json();
+            },
+
+            async cancelTask(taskId) {
+                const r = await fetch(`${API_BASE}/tasks/${taskId}`, { method: "DELETE" });
+                return r.json();
+            },
+
+            async getLogs(taskId) {
+                try {
+                    const r = await fetch(`${API_BASE}/tasks/${taskId}/logs`);
+                    return r.json();
+                } catch (e) { return { logs: [] }; }
+            },
+
+            async getSettings() {
+                try {
+                    const r = await fetch(`${API_BASE}/settings`);
+                    return r.json();
+                } catch (e) { return {}; }
+            },
+
+            async saveSettings(settings) {
+                const r = await fetch(`${API_BASE}/settings`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(settings)
+                });
+                return r.json();
+            },
+
+            subscribeTask(taskId, callback) {
+                if (eventSource) eventSource.close();
+                eventSource = new EventSource(`${API_BASE}/tasks/${taskId}/stream`);
+                eventSource.addEventListener("status", (e) => {
+                    callback(JSON.parse(e.data));
+                });
+                eventSource.addEventListener("error", (e) => {
+                    console.error("SSE error", e);
+                    eventSource.close();
+                });
+                return eventSource;
+            }
+        };
+
+        // Mode toggle
+        function setMode(mode) {
+            document.getElementById('modeAuto').classList.toggle('active', mode === 'auto');
+            document.getElementById('modeManual').classList.toggle('active', mode === 'manual');
+        }
+
+        // Modal
+        function showModal(id) { document.getElementById(id).classList.add('show'); }
+        function hideModal(id) { document.getElementById(id).classList.remove('show'); }
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) hideModal(this.id);
+            });
+        });
+
+        // Settings
+        function showSettings() { showModal('settingsModal'); }
+
+        async function loadSettings() {
+            const settings = await api.getSettings();
+            const mapping = {
+                gcpProjectId: "gcp_project_id",
+                gcsBucket: "gcs_bucket",
+                geminiModel: "gemini_model",
+                apiKey: "api_key",
+                apiUrl: "api_url",
+                modelName: "model_name",
+                spaceId: "contentful_space_id",
+                env: "contentful_env",
+                accessToken: "contentful_access_token"
+            };
+            Object.entries(mapping).forEach(([id, key]) => {
+                const el = document.getElementById(id);
+                if (el && settings[key] !== undefined) {
+                    el.value = settings[key] === "***" ? "" : settings[key];
+                }
+            });
+        }
+
+        async function saveSettings() {
+            const settings = {
+                gcp_project_id: document.getElementById('gcpProjectId').value,
+                gcs_bucket: document.getElementById('gcsBucket').value,
+                gemini_model: document.getElementById('geminiModel').value,
+                api_key: document.getElementById('apiKey').value,
+                api_url: document.getElementById('apiUrl').value,
+                model_name: document.getElementById('modelName').value,
+                contentful_space_id: document.getElementById('spaceId').value,
+                contentful_env: document.getElementById('env').value,
+                contentful_access_token: document.getElementById('accessToken').value
+            };
+            await api.saveSettings(settings);
+            hideModal('settingsModal');
+            alert('设置已保存');
+        }
+
+        // Chat
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        function addChatEntry(html, className = 'assistant') {
+            const messages = document.querySelector('.chat-messages');
+            const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+            const div = document.createElement('div');
+            div.className = 'chat-entry';
+            div.innerHTML = `<div class="chat-${className}">${html}</div><div class="chat-time">${time}</div>`;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+            return div;
+        }
+
+        function updateProgress(progress, stage, taskId) {
+            const pct = Math.round(progress * 100);
+            document.querySelector('.progress-bar-fill').style.width = pct + '%';
+            document.querySelector('.progress-stage').textContent = pct + '%';
+            document.querySelector('.progress-info span:first-child').textContent = 'Task ' + (taskId || '').slice(0, 8);
+            document.querySelector('.progress-info span:last-child').textContent = stage || '';
+
+            const chips = document.querySelectorAll('.stage-chip');
+            const stageOrder = ['download', 'scrape_metadata', 'analyze', 'extract_frames', 'write_article', 'qc_check', 'publish', 'done'];
+            const currentIdx = stageOrder.indexOf(stage?.toLowerCase());
+            chips.forEach((chip, i) => {
+                chip.classList.remove('done', 'active');
+                if (i < currentIdx) chip.classList.add('done');
+                else if (i === currentIdx) chip.classList.add('active');
+            });
+        }
+
+        function addLogEntry(msg, type = '') {
+            const logList = document.querySelector('.log-list');
+            const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerHTML = `<span class="log-time">${time}</span><span class="log-msg ${type}">${msg}</span>`;
+            logList.appendChild(div);
+            logList.scrollTop = logList.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            addChatEntry(msg, 'user');
+            input.value = '';
+
+            const isUrl = msg.includes('tiktok.com') || msg.includes('instagram.com') || msg.includes('youtube.com');
+
+            if (isUrl) {
+                addChatEntry('> 正在提交任务...', 'assistant');
+                try {
+                    const result = await api.createTask(msg);
+                    if (result.task_id) {
+                        currentTaskId = result.task_id;
+                        addChatEntry(`> 任务已提交: ${result.task_id.slice(0, 8)}`, 'assistant');
+                        addLogEntry(`Task submitted: ${result.task_id}`, 'running');
+
+                        api.subscribeTask(currentTaskId, (data) => {
+                            updateProgress(data.progress, data.current_stage, data.task_id);
+                            addLogEntry(`${data.current_stage}: ${Math.round(data.progress * 100)}%`, data.status === 'failed' ? 'error' : 'running');
+                            if (data.status === 'done') {
+                                addLogEntry('✓ Pipeline completed', 'success');
+                            } else if (data.status === 'failed') {
+                                addLogEntry('✗ Failed: ' + (data.error || 'Unknown error'), 'error');
+                            }
+                        });
+                    }
+                } catch (e) {
+                    addChatEntry(`> 错误: ${e.message}`, 'assistant');
+                }
+            } else if (msg.startsWith('/')) {
+                addChatEntry(`> 命令 ${msg} 已收到`, 'assistant');
+            } else {
+                addChatEntry('> 请输入视频URL (TikTok/Instagram)', 'assistant');
+            }
+        }
+
+        // Project selection
+        document.querySelectorAll('.project-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.project-item').forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Tab selection
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                if (e.target.classList.contains('tab-close')) return;
+                this.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Open folder
+        function openFolder(type) {
+            alert(`打开 ${type === 'articles' ? '文章' : '视频'} 目录`);
+        }
+
+        // ========== Resizable Splitters ==========
+        function initSplitters() {
+            // Vertical splitters (column width)
+            const vSplitters = [
+                { el: document.getElementById('splitterV1'), leftEl: document.getElementById('colLeft'), rightEl: document.getElementById('colMiddle') },
+                { el: document.getElementById('splitterV2'), leftEl: document.getElementById('colMiddle'), rightEl: document.getElementById('colRight') }
+            ];
+
+            vSplitters.forEach(({ el, leftEl, rightEl }) => {
+                if (!el || !leftEl || !rightEl) return;
+                let isDragging = false;
+                let startX = 0;
+                let startWidth = 0;
+
+                el.addEventListener('mousedown', function(e) {
+                    isDragging = true;
+                    startX = e.clientX;
+                    startWidth = leftEl.offsetWidth;
+                    el.classList.add('dragging');
+                    document.body.style.cursor = 'col-resize';
+                    e.preventDefault();
+                });
+
+                document.addEventListener('mousemove', function(e) {
+                    if (!isDragging) return;
+                    const dx = e.clientX - startX;
+                    const newWidth = startWidth + dx;
+                    const minW = 180;
+                    const maxW = startWidth + rightEl.offsetWidth - 180;
+                    if (newWidth >= minW && newWidth <= maxW) {
+                        leftEl.style.width = newWidth + 'px';
+                    }
+                });
+
+                document.addEventListener('mouseup', function() {
+                    if (isDragging) {
+                        isDragging = false;
+                        el.classList.remove('dragging');
+                        document.body.style.cursor = '';
+                    }
+                });
+            });
+
+            // Horizontal splitters (inner left column)
+            const hSplitters = [
+                { el: document.getElementById('splitterH1'), topEl: document.getElementById('cardAi'), bottomEl: document.getElementById('cardProgress') },
+                { el: document.getElementById('splitterH2'), topEl: document.getElementById('cardProgress'), bottomEl: document.getElementById('cardLog') }
+            ];
+
+            hSplitters.forEach(({ el, topEl, bottomEl }) => {
+                if (!el || !topEl || !bottomEl) return;
+                let isDragging = false;
+                let startY = 0, startTopH = 0;
+
+                el.addEventListener('mousedown', function(e) {
+                    isDragging = true;
+                    el.classList.add('dragging');
+                    startY = e.clientY;
+                    startTopH = topEl.offsetHeight;
+                    e.preventDefault();
+                });
+
+                document.addEventListener('mousemove', function(e) {
+                    if (!isDragging) return;
+                    const delta = e.clientY - startY;
+                    const newTopH = startTopH + delta;
+                    const minH = 60;
+                    if (newTopH >= minH) {
+                        topEl.style.height = newTopH + 'px';
+                    }
+                });
+
+                document.addEventListener('mouseup', function() {
+                    if (isDragging) {
+                        isDragging = false;
+                        el.classList.remove('dragging');
+                    }
+                });
+            });
+        }
+
+        // Init
+        loadSettings();
+        initSplitters();
+
+        // Auto-check health on load
+        api.health().then(r => {
+            if (r.status === 'ok') console.log('API connected');
+        });
+    </script>
+</body>
+</html>

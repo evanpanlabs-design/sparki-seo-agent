@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sparki Pipeline Log</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            background: #0d1117;
+            color: #c9d1d9;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .logo {
+            width: 28px; height: 28px;
+            background: #4A83F9;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 700; font-size: 14px;
+        }
+        h1 { font-size: 16px; font-weight: 600; color: #e6edf3; }
+        .input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        #urlInput {
+            flex: 1;
+            padding: 10px 14px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        #urlInput:focus { outline: none; border-color: #4A83F9; }
+        #urlInput::placeholder { color: #6e7681; }
+        button {
+            padding: 10px 20px;
+            background: #4A83F9;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        button:hover { background: #3A73E9; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .log-area {
+            flex: 1;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .log-line { white-space: pre-wrap; word-break: break-all; }
+        .log-time { color: #6e7681; margin-right: 8px; }
+        .log-info { color: #4A83F9; }
+        .log-success { color: #10B981; }
+        .log-error { color: #F85149; }
+        .log-warn { color: #D29922; }
+        .log-cmd { color: #A371F7; }
+        .status-bar {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #6e7681;
+        }
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #6e7681;
+        }
+        .dot.running { background: #4A83F9; animation: pulse 1s infinite; }
+        .dot.done { background: #10B981; }
+        .dot.error { background: #F85149; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">S</div>
+        <h1>Sparki Pipeline Log</h1>
+    </div>
+
+    <div class="input-row">
+        <input type="text" id="urlInput" placeholder="输入视频URL (TikTok/Instagram)...">
+        <button id="submitBtn" onclick="submitTask()">提交</button>
+    </div>
+
+    <div class="log-area" id="logArea">
+        <div class="log-line"><span class="log-time">[等待中]</span><span class="log-info">> 输入视频URL开始任务</span></div>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-indicator">
+            <div class="dot" id="statusDot"></div>
+            <span id="statusText">空闲</span>
+        </div>
+        <span id="progressText"></span>
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:5555/api";
+        let currentTaskId = null;
+        let eventSource = null;
+        let taskHistory = [];
+
+        const logArea = document.getElementById('logArea');
+        const urlInput = document.getElementById('urlInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const progressText = document.getElementById('progressText');
+
+        function log(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+            const div = document.createElement('div');
+            div.className = 'log-line';
+            div.innerHTML = `<span class="log-time">[${time}]</span><span class="log-${type}">${msg}</span>`;
+            logArea.appendChild(div);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function setStatus(status, text = '') {
+            statusDot.className = 'dot ' + status;
+            if (text) statusText.textContent = text;
+            if (status === 'running') {
+                statusText.textContent = '运行中';
+            } else if (status === 'done') {
+                statusText.textContent = '完成';
+            } else if (status === 'error') {
+                statusText.textContent = '失败';
+            } else {
+                statusText.textContent = text || '空闲';
+            }
+        }
+
+        async function submitTask() {
+            const url = urlInput.value.trim();
+            if (!url) return;
+
+            submitBtn.disabled = true;
+            log(`> 提交任务: ${url}`, 'cmd');
+
+            try {
+                const res = await fetch(`${API_BASE}/tasks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        video_url: url,
+                        project_name: 'default'
+                    })
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    log(`> 错误: ${data.error}`, 'error');
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                currentTaskId = data.task_id;
+                log(`> 任务已创建: ${currentTaskId}`, 'info');
+                setStatus('running');
+
+                subscribeTask(currentTaskId);
+
+                // 同时获取logs
+                fetchLogs(currentTaskId);
+
+            } catch (e) {
+                log(`> 连接失败: ${e.message}`, 'error');
+                submitBtn.disabled = false;
+            }
+        }
+
+        function subscribeTask(taskId) {
+            if (eventSource) eventSource.close();
+
+            eventSource = new EventSource(`${API_BASE}/tasks/${taskId}/stream`);
+
+            eventSource.addEventListener('status', (e) => {
+                const data = JSON.parse(e.data);
+                updateProgress(data);
+            });
+
+            eventSource.addEventListener('error', (e) => {
+                log('> SSE连接断开', 'warn');
+                eventSource.close();
+                submitBtn.disabled = false;
+            });
+        }
+
+        function updateProgress(data) {
+            const stageMap = {
+                'download': '下载',
+                'scrape_metadata': '元数据',
+                'analyze': '分析',
+                'write_article': '写文章',
+                'qc_check': '质检',
+                'rewrite': '重写',
+                'publish': '发布',
+                'done': '完成',
+                'failed': '失败'
+            };
+
+            const stageName = stageMap[data.current_stage] || data.current_stage || '';
+            const pct = Math.round(data.progress * 100);
+
+            progressText.textContent = `${stageName} ${pct}%`;
+
+            if (data.status === 'done') {
+                log(`✓ Pipeline完成`, 'success');
+                setStatus('done');
+                submitBtn.disabled = false;
+                eventSource.close();
+                fetchLogs(currentTaskId);
+            } else if (data.status === 'failed') {
+                log(`✗ 失败: ${data.error || '未知错误'}`, 'error');
+                setStatus('error');
+                submitBtn.disabled = false;
+                eventSource.close();
+                fetchLogs(currentTaskId);
+            } else if (data.status === 'running' && data.progress > 0) {
+                log(`${stageName} ${pct}%`, 'info');
+            }
+        }
+
+        async function fetchLogs(taskId) {
+            try {
+                const res = await fetch(`${API_BASE}/tasks/${taskId}/logs`);
+                const data = await res.json();
+                if (data.logs && data.logs.length > 0) {
+                    log('--- 服务器日志 ---', 'info');
+                    data.logs.forEach(l => log(l, 'info'));
+                }
+            } catch (e) {
+                // 忽略
+            }
+        }
+
+        // 回车提交
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitTask();
+        });
+
+        // 启动时检查API
+        fetch(`${API_BASE}/health`).then(r => r.json()).then(d => {
+            log(`> API连接正常 (${d.timestamp})`, 'success');
+        }).catch(() => {
+            log('> 无法连接API服务器 (python -m src.agents.master.api_server)', 'error');
+        });
+    </script>
+</body>
+</html>
